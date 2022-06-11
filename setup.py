@@ -42,9 +42,7 @@ setuptools.setup(
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/daiyizheng/drugai",
-    keywords="Text processing tools, including named entity recognition, "
-                 "relation extraction, event extraction, and some statistical "
-                 "and visualization functions",
+    keywords="Pharmacy, medicine, chemistry and biology intersect with computers and AI ",
     packages=setuptools.find_packages(),
     classifiers=[
         "Intended Audience :: Developers",
