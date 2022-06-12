@@ -1,10 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# @Time    : 2022/6/11 18:46
+# @Time    : 2022/6/12 17:00
 # @Author  : Yizheng Dai
 # @Email   : 387942239@qq.com
-# @File    : drufai.py
-
+# @File    : __main__.py
 from __future__ import annotations, print_function
 
 from datetime import datetime

@@ -38,11 +38,11 @@ setuptools.setup(
     maintainer="yizheng dai",
     maintainer_email="387942239@qq.com",
     license='Apache 2.0',
-    description="Drug  Ai tools",
+    description="Pharmacy, medicine, chemistry and biology intersect with computers and AI ",
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/daiyizheng/drugai",
-    keywords="Pharmacy, medicine, chemistry and biology intersect with computers and AI ",
+    keywords=["Deep learning", "Drug", "Ai", "Tool"],
     packages=setuptools.find_packages(),
     classifiers=[
         "Intended Audience :: Developers",
@@ -54,8 +54,16 @@ setuptools.setup(
     ],
     install_requires= install_requires,
     tests_require=tests_requires,
-    python_requires='>=3.8',
+    python_requires='>=3.7',
+    # package_dir={'drugai': '__main__'},
+    entry_points={
+         'console_scripts': [
+          'drugai = drugai.__main__:main'
+         ]
+    },
+    include_package_data=True,
     package_data=package_data,
+    platforms='any',
     project_urls={
             'Bug Reports': 'https://github.com/daiyizheng/drugai/issues',
             'Source': 'https://github.com/daiyizheng/drugai',

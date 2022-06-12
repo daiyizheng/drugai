@@ -5,4 +5,4 @@
 # @Email   : 387942239@qq.com
 # @File    : version.py
 
-__version__ = "0.0.1"
+__version__ = "0.0.2"

@@ -6,9 +6,12 @@
 # @File    : __init__.py
 from __future__ import annotations, print_function
 
-import importlib
+import logging
+
+from drugai import version
 
 
+__version__ = version.__version__
 
-globals().update(importlib.import_module('alfred').__dict__)
 
+logging.getLogger(__name__).addHandler(logging.NullHandler())
