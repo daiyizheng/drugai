@@ -10,7 +10,6 @@ from datetime import datetime
 from colorama import Fore, Back, Style
 import argparse
 
-
 from drugai.version import __version__
 
 dt = datetime.now()
@@ -36,7 +35,7 @@ def arg_parse():
 
 
 def print_welcome_msg():
-    print('-'*70)
+    print('-' * 70)
     print(Fore.BLUE + Style.BRIGHT + '              Alfred ' + Style.RESET_ALL +
           Fore.WHITE + '- Valet of Artificial Intelligence.' + Style.RESET_ALL)
     print('         Author : ' + Fore.CYAN +
@@ -51,7 +50,7 @@ def print_welcome_msg():
           Style.BRIGHT + __git__ + Style.RESET_ALL)
     print('         Ver.   : ' + Fore.GREEN +
           Style.BRIGHT + __VERSION__ + Style.RESET_ALL)
-    print('-'*70)
+    print('-' * 70)
     print('\n')
 
 
@@ -60,7 +59,6 @@ def main():
     if args.version:
         print(print_welcome_msg())
         exit(0)
-
 
 
 if __name__ == '__main__':
