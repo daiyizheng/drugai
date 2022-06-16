@@ -6,12 +6,9 @@
 # @File    : __init__.py
 from __future__ import annotations, print_function
 
-import logging
-
-from drugai import version
-
-
-__version__ = version.__version__
-
-
-logging.getLogger(__name__).addHandler(logging.NullHandler())
+from drugai.dataloader import Processor
+from drugai.models.lstm import LSTMModel
+from drugai.dataloader import Processor
+MODEL_CLASSES = {
+    "lstm": (LSTMModel, Processor)
+}

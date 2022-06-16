@@ -1,0 +1,39 @@
+data_arguments:
+  seed: 1314
+  data_dir: "../datasets"
+  data_name: "Random"
+  model_name: "lstm"
+
+train_argunents:
+  per_gpu_train_batch_size: 512
+  per_gpu_eval_batch_size: 512
+  per_gpu_test_batch_size: 512
+  num_train_epochs: 1
+  learning_rate: 0.00002
+  classifier_learning_rate: 0.002
+  embeddings_learning_rate: 0.0006
+  lstm_learning_rate: 0.002
+  gradient_accumulation_steps: 1
+  logging_steps: 50
+  adam_epsilon: 0.00000001
+  evaluate_during_training: true
+  warmup_steps: 32
+  weight_decay: 0.0
+  max_grad_norm: 1.0
+  local_rank: -1
+  no_cuda: false
+  n_workers: 0
+  fp16: false
+  fp16_opt_level: "01" #['00', '01', '02', and '03']
+
+model_arguments:
+  num_layers: 3
+  hidden_size: 768
+  padding_ids: 0
+  dropout: 0.1
+
+output_arguments:
+  output_dir: "../experiments/outputs"
+  tensorboardx_path: "../experiments/runs"
+  log_dir: "../experiments/logs"
+
