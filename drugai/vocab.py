@@ -8,6 +8,9 @@ from __future__ import annotations, print_function
 
 import abc
 
+import torch
+
+
 class SpecialTokens:
     bos_token = '<BOS>'
     eos_token = '<EOS>'
@@ -75,6 +78,8 @@ class Vocab(abc.ABC):
         return token_ids
 
     def ids_to_string(self, ids, is_del_bos_eos_token=True):
+        if isinstance(ids, torch.Tensor):
+            ids = ids.tolist()
         if is_del_bos_eos_token:
             ids = ids[1:]
             ids = ids[:-1]

@@ -1,11 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# @Time    : 2022/6/15 0:52
+# @Time    : 2022/6/21 21:05
 # @Author  : Yizheng Dai
 # @Email   : 387942239@qq.com
-# @File    : drugai.py
-from __future__ import annotations, print_function
-
+# @File    : train.py
 import logging
 import os
 from datetime import datetime
@@ -13,7 +11,6 @@ import argparse
 
 import yaml
 import torch
-import pandas as pd
 
 from drugai.trainer import Trainer
 from drugai.utils.common import override_defaults, seed_everything, default_collate_fn, load_dataset
@@ -22,20 +19,17 @@ from drugai.vocab import Vocab
 
 logger = logging.getLogger(__file__)
 
-
 def get_argparse():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--config_dir", default=None, type=str, required=True, help="The parameter config path.")
-    parser.add_argument("--do_train", action="store_true", help="Whether to run training.")
-    parser.add_argument("--do_eval", action="store_true", help="Whether to run eval on the dev set.")
-    parser.add_argument("--do_predict", action="store_true", help="Whether to run predictions on the dev set.")
+    parser.add_argument("--train_config_dir", default=None, type=str, required=True, help="The parameter config path.")
+
     return parser
 
 
 def main():
     args = get_argparse().parse_args()
     ## 修正的参数
-    f = open(args.config_dir, "r")
+    f = open(args.train_config_dir, "r")
     fix_args = yaml.full_load(f)
     for k in fix_args:
         args = override_defaults(args, fix_args[k])
@@ -72,25 +66,17 @@ def main():
         args.n_gpu = 1
     args.device = device
 
-    if args.do_train:
-        train_dataset = load_dataset(args, "train")
-        vocab = Vocab.from_data(train_dataset)
-        args.vocab_size = len(vocab)
-        args.padding_ids = vocab.pad_token_ids
-        eval_dataset = load_dataset(args, "test")
-        model = MODEL_CLASSES[args.model_name][0](args)
+    train_dataset = load_dataset(args, "train")
+    vocab = Vocab.from_data(train_dataset)
+    args.vocab_size = len(vocab)
+    args.padding_ids = vocab.pad_token_ids
+    eval_dataset = load_dataset(args, "test")
+    model = MODEL_CLASSES[args.model_name][0](args)
 
-        collate_fn = default_collate_fn(vocab)
-        trainer = Trainer(model=model, vocab=vocab, args=args, collate_fn=collate_fn, train_dataset=train_dataset,
-                          eval_dataset=eval_dataset)
-        trainer.train()
-
-    if args.do_eval:
-        pass
-
-    if args.do_predict:
-        pass
-
+    collate_fn = default_collate_fn(vocab)
+    trainer = Trainer(model=model, vocab=vocab, args=args, collate_fn=collate_fn, train_dataset=train_dataset,
+                      eval_dataset=eval_dataset)
+    trainer.train()
 
 if __name__ == '__main__':
     main()
