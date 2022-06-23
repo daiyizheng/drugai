@@ -12,8 +12,10 @@ import os
 import torch
 import torch.nn.functional as F
 from tqdm import tqdm
-from transformers import AdamW, get_linear_schedule_with_warmup, get_polynomial_decay_schedule_with_warmup
-from torch.utils.data import RandomSampler, DistributedSampler, DataLoader
+from transformers import AdamW, get_polynomial_decay_schedule_with_warmup
+from torch.utils.data import DataLoader
+
+from drugai.models.trainer_base import TrainerBase
 
 try:
     from torch.utils.tensorboard import SummaryWriter
@@ -28,7 +30,7 @@ except ImportError:
 logger = logging.getLogger(__file__)
 
 
-class Trainer(object):
+class Trainer(TrainerBase):
     def __init__(self,
                  model,
                  vocab,
@@ -36,16 +38,16 @@ class Trainer(object):
                  collate_fn=None,
                  train_dataset=None,
                  eval_dataset=None,
-                 test_dataset=None):
-
-        self.model = model
-        self.vocab = vocab
-        self.args = args
-        self.train_dataset = train_dataset
-        self.eval_dataset = eval_dataset
-        self.test_dataset = test_dataset
-        self.collate_fn = collate_fn
-        self.model.to(args.device)
+                 test_dataset=None,
+                 *arg,
+                 **kwargs):
+        super(Trainer, self).__init__(model=model,
+                                      vocab=vocab,
+                                      args=args,
+                                      train_dataset=train_dataset,
+                                      eval_dataset=eval_dataset,
+                                      test_dataset=test_dataset,
+                                      collate_fn=collate_fn)
 
     def train(self):
         # tensorboardx
@@ -88,12 +90,9 @@ class Trainer(object):
         self.model.train()
         for epoch in range(self.args.num_train_epochs):
             tqdm_data = tqdm(train_dataloader, desc='Training (epoch #{})'.format(epoch))
-            for step, (source, target, lengths) in enumerate(tqdm_data):
-                self.model.train()
-                source = source.to(self.args.device)
-                target = target.to(self.args.device)
-                lengths = lengths.to(self.args.device)
-                logits, _, _, loss = self.model(input_ids=source, lengths=lengths, hidden=None, target_ids=target)
+            self.model.train()
+            for step, batch_data in enumerate(tqdm_data):
+                logits, _, _, loss = self.forward(batch_data)
 
                 if self.args.n_gpu > 1:
                     loss = loss.mean()  # mean() to average on multi-gpu parallel training
@@ -118,29 +117,40 @@ class Trainer(object):
                     scheduler.step()  # Update learning rate schedule
                     self.model.zero_grad()
                     global_step += 1
-                    if self.args.local_rank in [-1, 0] and self.args.logging_steps > 0 and global_step % self.args.logging_steps == 0:
-                        if self.args.local_rank == -1 and self.args.evaluate_during_training:
-                            results = self.evaluate()
-                            eval_loss = results["loss"]
-                            logger.info("*" * 50)
-                            logger.info("current step loss for logging steps: {}".format(eval_loss))
-                            logger.info("*" * 50)
+                    tqdm_data.set_postfix({**logs, **{"step": global_step}})
 
-                            for key, value in results.items():
-                                eval_key = "eval_{}".format(key)
-                                logs[eval_key] = value
-                                print("eval_{}".format(key), value, global_step)
+            if self.args.local_rank == -1 and self.args.evaluate_during_training:
+                results = self.evaluate()
+                eval_loss = results["loss"]
+                logger.info("*" * 50)
+                logger.info("current step loss for logging steps: {}".format(eval_loss))
+                logger.info("*" * 50)
 
-                        learning_rate_scalar = scheduler.get_lr()[0]
+                for key, value in results.items():
+                    eval_key = "eval_{}".format(key)
+                    logs[eval_key] = value
+                    print("eval_{}".format(key), value, epoch)
 
-                        logs["learning_rate"] = learning_rate_scalar
-                        for key, value in logs.items():
-                            self.tb_writer.add_scalar(key, value, global_step)
-                        ## 保存模型
-                        self.save_model()
-                        self.model.to(self.args.device)
+            learning_rate_scalar = scheduler.get_lr()[0]
+            logs["learning_rate"] = learning_rate_scalar
+            for key, value in logs.items():
+                self.tb_writer.add_scalar(key, value, epoch)
+            ## 保存模型
+            self.save_model()
+            tqdm_data.set_postfix({**logs, **{"step": global_step}})
 
-                tqdm_data.set_postfix({**logs, **{"step": global_step}})
+    def forward(self, batch_data, is_train=True):
+        if is_train:
+            source, target, lengths = batch_data
+            target = target.to(self.args.device)
+        else:
+            source, lengths = batch_data
+            target = None
+        source = source.to(self.args.device)
+        lengths = lengths.to(self.args.device)
+
+        output = self.model(input_ids=source, lengths=lengths, hidden=None, target_ids=target)
+        return output
 
     def config_optimizer(self, total=None):
         # Prepare optimizer and schedule (linear warmup and decay)
@@ -217,11 +227,8 @@ class Trainer(object):
         eval_loss = 0.0
         nb_eval_steps = 0
         logs = {"eval_loss": 0.0, "eval_running_loss": 0.0}
-        for step, (source, target, lengths) in enumerate(tqdm_data):
-            source = source.to(self.args.device)
-            target = target.to(self.args.device)
-            lengths = lengths.to(self.args.device)
-            _, _, hidden, loss = self.model(input_ids=source, lengths=lengths, hidden=None, target_ids=target)
+        for step, batch_data in enumerate(tqdm_data):
+            _, _, hidden, loss = self.forward(batch_data)
             eval_loss += loss.item()
             nb_eval_steps += 1
             logs['eval_loss'] = loss.item()
@@ -247,9 +254,8 @@ class Trainer(object):
         len_smiles_list = [1 for _ in range(self.args.test_batch_size)]
         lens = torch.tensor([1 for _ in range(self.args.test_batch_size)], dtype=torch.long, device=self.args.device)
         end_smiles_list = [False for _ in range(self.args.test_batch_size)]
-        hidden = None
         for i in range(1, self.args.max_length + 1):  # 列
-            logits, _, _ = self.model(input_ids=test_dataloader, lengths=lens, hidden=hidden)
+            logits, _, _ = self.forward(batch_data = (test_dataloader, lens), is_train=False)
             probs = [F.softmax(o, dim=-1) for o in logits]
             # sample from probabilities 按照概率采样
             ind_tops = [torch.multinomial(p, 1) for p in probs]
@@ -267,23 +273,7 @@ class Trainer(object):
         new_smiles_list = [new_smiles_list[i][:l] for i, l in enumerate(len_smiles_list)]
         return [self.vocab.ids_to_string(t) for t in new_smiles_list]
 
-    def save_model(self):
-
-        model_to_save = self.model.module if hasattr(self.model, 'module') else self.model
-        model_to_save = model_to_save.to('cpu')
-        ## 保存模型
-        torch.save(model_to_save.state_dict(), os.path.join(self.args.output_dir, "model.pt"))
-        ## 保存字典
-        torch.save(self.vocab, os.path.join(self.args.output_dir, "vocab.pt"))
-        ## 保存参数
-        torch.save(self.args, os.path.join(self.args.output_dir, "args.pt"))
-
-    @classmethod
-    def load_model(cls, *args, **kwargs):
-
-        return cls(*args, **kwargs)
-
-    def get_train_dataloader(self, dataset):
+    def get_train_dataloader(self, dataset=None):
         train_loader = DataLoader(dataset,
                                   batch_size=self.args.train_batch_size,
                                   shuffle=True,
@@ -291,7 +281,7 @@ class Trainer(object):
                                   collate_fn=self.collate_fn)
         return train_loader
 
-    def get_evaluate_dataloader(self, dataset):
+    def get_evaluate_dataloader(self, dataset=None):
         eval_loader = DataLoader(dataset,
                                  batch_size=self.args.eval_batch_size,
                                  shuffle=False,
@@ -299,7 +289,7 @@ class Trainer(object):
                                  collate_fn=self.collate_fn)
         return eval_loader
 
-    def get_predict_dataloader(self, dataset):
+    def get_predict_dataloader(self, dataset=None):
         test_dataloader = [torch.tensor([self.vocab.bos_token_ids],
                                         dtype=torch.long,
                                         device=self.args.device

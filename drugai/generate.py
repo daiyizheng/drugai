@@ -15,7 +15,6 @@ import pandas as pd
 import yaml
 from tqdm import tqdm
 
-from drugai.trainer import Trainer
 from drugai import MODEL_CLASSES
 from drugai.utils.common import override_defaults
 
@@ -48,13 +47,6 @@ def main():
         args.n_gpu = 1
     args.device = device
 
-    if not os.path.exists(os.path.join(args.param_dir, "args.pt")):
-        raise KeyError("args path error")
-    load_args = torch.load(os.path.join(args.param_dir, "args.pt"))
-    ## 加载保存的模型参数
-    for k in fix_args["model_arguments"].keys():
-        if getattr(load_args, k, None):
-            setattr(args, k, getattr(load_args, k))
     if not os.path.exists(os.path.join(args.param_dir, "vocab.pt")):
         raise KeyError("vocab path error")
     vocab = torch.load(os.path.join(args.param_dir, "vocab.pt"))
@@ -62,10 +54,11 @@ def main():
     if not os.path.exists(os.path.join(args.param_dir, "model.pt")):
         raise KeyError("model path error")
 
-    model_class, _ = MODEL_CLASSES[args.model_name]
-    model = model_class(args=args)
+    model = MODEL_CLASSES[args.model_name][0](args=args)
     model.load_state_dict(torch.load(os.path.join(args.param_dir, "model.pt")))
-    trainer = Trainer(model=model, vocab=vocab, args=args, collate_fn=None, train_dataset=None, eval_dataset=None)
+    trainer = MODEL_CLASSES[args.model_name][2](model=model,
+                                                vocab=vocab,
+                                                args=args)
     gen_number = args.gen_number
     samples = []
     with tqdm(args.gen_number, desc="Generating sample") as T:

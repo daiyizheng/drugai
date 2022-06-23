@@ -12,10 +12,9 @@ import argparse
 import yaml
 import torch
 
-from drugai.trainer import Trainer
 from drugai.utils.common import override_defaults, seed_everything, default_collate_fn, load_dataset
 from drugai import MODEL_CLASSES
-from drugai.vocab import Vocab
+
 
 logger = logging.getLogger(__file__)
 
@@ -67,14 +66,18 @@ def main():
     args.device = device
 
     train_dataset = load_dataset(args, "train")
-    vocab = Vocab.from_data(train_dataset)
+    vocab = MODEL_CLASSES[args.model_name][1].from_data(train_dataset)
     args.vocab_size = len(vocab)
     args.padding_ids = vocab.pad_token_ids
     eval_dataset = load_dataset(args, "test")
     model = MODEL_CLASSES[args.model_name][0](args)
 
     collate_fn = default_collate_fn(vocab)
-    trainer = Trainer(model=model, vocab=vocab, args=args, collate_fn=collate_fn, train_dataset=train_dataset,
+    trainer = MODEL_CLASSES[args.model_name][2](model=model,
+                                                vocab=vocab,
+                                                args=args,
+                                                collate_fn=collate_fn,
+                                                train_dataset=train_dataset,
                       eval_dataset=eval_dataset)
     trainer.train()
 

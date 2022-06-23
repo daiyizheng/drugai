@@ -7,8 +7,10 @@
 from __future__ import annotations, print_function
 
 from drugai.dataloader import Processor
-from drugai.models.lstm import LSTMModel
-from drugai.dataloader import Processor
+from drugai.models.lstm.model import LSTMModel
+from drugai.models.lstm.trainer import Trainer
+from drugai.models.lstm.vocab import LstmVocab
+
 MODEL_CLASSES = {
-    "lstm": (LSTMModel, Processor)
+    "lstm": (LSTMModel, LstmVocab, Trainer, Processor)
 }
