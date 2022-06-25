@@ -85,9 +85,7 @@ class Trainer(TrainerBase):
         logger.info("  Logging steps = %d", self.args.logging_steps)
         self.model.zero_grad()
         global_step = 1
-
         logs = {"loss": 0.0, "running_loss": 0.0}
-        self.model.train()
         for epoch in range(self.args.num_train_epochs):
             tqdm_data = tqdm(train_dataloader, desc='Training (epoch #{})'.format(epoch))
             self.model.train()

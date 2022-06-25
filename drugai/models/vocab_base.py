@@ -24,7 +24,10 @@ class Vocab(abc.ABC):
                 special_token.pad_token in data) or (special_token.unk_token in data):
             raise ValueError('SpecialTokens in chars')
 
-        all_syms = sorted(list(data))+ [special_token.pad_token, special_token.unk_token, special_token.bos_token, special_token.eos_token]
+        all_syms = sorted(list(data))+ [special_token.pad_token,
+                                        special_token.unk_token,
+                                        special_token.bos_token,
+                                        special_token.eos_token]
 
         self.special_token = special_token
         self.c2i = {c: i for i, c in enumerate(all_syms)}

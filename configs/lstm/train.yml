@@ -9,7 +9,7 @@ train_argunents:
   per_gpu_train_batch_size: 512
   per_gpu_eval_batch_size: 512
   num_train_epochs: 1
-  learning_rate: 0.00002
+  learning_rate: 0.001
   classifier_learning_rate: 0.002
   embeddings_learning_rate: 0.0006
   lstm_learning_rate: 0.002
