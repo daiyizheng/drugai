@@ -13,7 +13,7 @@ gen = pd.read_csv("../experiments/outputs/smiles.csv")
 
 def get_argparse():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--generate_config_dir", default=None, type=str, required=True,
+    parser.add_argument("--config_dir", default=None, type=str, required=True,
                         help="The parameter config path for samples.")
     return parser
 

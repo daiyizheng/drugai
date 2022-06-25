@@ -9,11 +9,17 @@ import argparse
 import logging
 import os
 from datetime import datetime
+from functools import partial
 
 import torch
 import yaml
+from moses.script_utils import read_smiles_csv
+import torch.nn as nn
 
+from drugai import MODEL_CLASSES
+from drugai.models.dataset_base import default_collate_fn
 from drugai.utils.common import override_defaults, seed_everything
+
 
 logger = logging.getLogger(__file__)
 
@@ -28,7 +34,7 @@ def main():
     f = open(config.config_dir, "r")
     fix_args = yaml.full_load(f)
     for k in fix_args:
-        args = override_defaults(config, fix_args[k])
+        config = override_defaults(config, fix_args[k])
 
     ## 随机种子
     seed_everything(config.seed)
@@ -63,9 +69,30 @@ def main():
     config.device = device
 
 
+    train_dataset = read_smiles_csv(config.train_dir)
+    eval_dataset = read_smiles_csv(config.eval_dir)
 
+    model_class, vocab_class, trainer_class, dataset_class = MODEL_CLASSES[config.model_name]
+    vocab = vocab_class.from_data(train_dataset)
+    config.vocab_size = len(vocab)
+    print("vocab_size: ", len(vocab))
 
-
+    model = model_class(vocab_size=config.vocab_size,
+                        num_layers=config.num_layers,
+                        dropout_rate=config.dropout_rate,
+                        hidden_size=config.hidden_size,
+                        pad_token_ids=vocab.pad_token_ids)
+    collate_fn = partial(default_collate_fn, vocab)
+    criterion = nn.CrossEntropyLoss()
+    dataset = dataset_class(train_data=train_dataset,
+                            eval_data=eval_dataset,
+                            test_data=None,
+                            batch_size=config.batch_size,
+                            vocab=vocab,
+                            num_workers=config.num_workers,
+                            collate_fn=collate_fn)
+    trainer = trainer_class(config)
+    trainer.fit(model=model,dataset=dataset, vocab=vocab, criterion=criterion)
 
 if __name__ == '__main__':
-    pass
+    main()

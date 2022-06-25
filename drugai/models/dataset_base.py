@@ -74,7 +74,8 @@ class DataSetBase(abc.ABC):
                 raise KeyError
 
             test_dataset = [torch.tensor([self.vocab.bos_token_ids], dtype=torch.long) for _ in range(batch_size)]
-            self.test_dataset = torch.tensor(test_dataset, dtype=torch.long)
+            test_dataset = torch.tensor(test_dataset, dtype=torch.long)
+            self.test_dataset = test_dataset.unsqueeze(1)
 
     def train_dataloader(self):
         return DataLoader(self.train_dataset,

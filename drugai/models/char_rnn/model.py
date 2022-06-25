@@ -17,13 +17,13 @@ class RNN(nn.Module):
                  num_layers: int,
                  dropout_rate: int,
                  hidden_size: int,
-                 token_padding_ids: int):
+                 pad_token_ids: int):
         super(RNN, self).__init__()
         self.hidden_size = hidden_size
         self.num_layers = num_layers
         self.dropout_rate = dropout_rate
         self.vocab_size = self.input_size = self.output_size = vocab_size
-        self.embedding_layer = nn.Embedding(self.vocab_size, self.vocab_size, padding_idx=token_padding_ids)
+        self.embedding_layer = nn.Embedding(self.vocab_size, self.vocab_size, padding_idx=pad_token_ids)
         self.lstm_layer = nn.LSTM(self.input_size, self.hidden_size, self.num_layers, dropout=self.dropout_rate, batch_first=True)
         self.linear_layer = nn.Linear(self.hidden_size, self.output_size)
 

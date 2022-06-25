@@ -29,8 +29,8 @@ class Trainer(TrainerBase):
         def get_params():
             return (p for p in self.model.parameters() if p.requires_grad)
 
-        optimizer = optim.Adam(get_params(), lr=self.config.lr)
-        scheduler = optim.lr_scheduler.StepLR(optimizer, self.config.step_size, self.config.gamma)
+        optimizer = optim.Adam(get_params(), lr=self.config.learning_rate)
+        scheduler = optim.lr_scheduler.StepLR(optimizer, self.config.warmup_steps, self.config.gamma)
         return optimizer, scheduler
 
     def get_train_dataloader(self):
@@ -41,6 +41,7 @@ class Trainer(TrainerBase):
             self.train_step(batch_data, step)
         self.logs["learning_rate"] = self.scheduler.get_lr()[0]
 
+
     def train_step(self, batch_data, step):
         input_ids, target, lengths = batch_data
         batch = {
@@ -48,8 +49,9 @@ class Trainer(TrainerBase):
             "lengths": lengths.to(self.config.device)
         }
         target = target.to(self.config.device)
-        logits = self(batch)
+        logits = self(**batch)
         loss = self.criterion(logits.view(-1, logits.shape[-1]), target.view(-1))
+        self.optimizer.zero_grad()
         if self.config.n_gpu > 1:
             loss = loss.mean()  # mean() to average on multi-gpu parallel training
         if self.config.gradient_accumulation_steps > 1:
@@ -63,7 +65,7 @@ class Trainer(TrainerBase):
 
         self.logs["loss"] += loss.item()
 
-        self.epoch_data.set_postfix({"loss": self.logs["loss"] / step, **{"step": step}})
+        self.epoch_data.set_postfix({"loss": self.logs["loss"] / (step+1), **{"step": step+1}})
         self.global_step = 1
 
         if (step + 1) % self.config.gradient_accumulation_steps == 0:
@@ -72,9 +74,9 @@ class Trainer(TrainerBase):
             else:
                 torch.nn.utils.clip_grad_norm(self.model.parameters(), self.config.max_grad_norm)
 
+
             self.optimizer.step()
-            self.scheduler.step()  # Update learning rate schedule
-            self.model.zero_grad()
+
         return logits
 
     def get_evaluate_dataloader(self, *args, **kwargs):
@@ -106,10 +108,10 @@ class Trainer(TrainerBase):
             "lengths": lengths.to(self.config.device)
         }
         target = target.to(self.config.device)
-        logits = self(batch)
+        logits = self(**batch)
         loss = self.criterion(logits.view(-1, logits.shape[-1]), target.view(-1))
         self.logs["eval_loss"] += loss.item()
-        self.eval_data.set_postfix({**{"eval_loss": self.logs["eval_loss"] / step}, **{"eval_step": step}})
+        self.eval_data.set_postfix({**{"eval_loss": self.logs["eval_loss"] / (step+1)}, **{"eval_step": step+1}})
         return logits
 
     def get_predict_dataloader(self, *args, **kwargs):
@@ -118,7 +120,7 @@ class Trainer(TrainerBase):
     def predict(self, gen_batch_size, max_length):
         self.dataset.step(is_train=False, batch_size=gen_batch_size)
         test_dataloader = self.get_predict_dataloader()
-        test_dataloader = test_dataloader.unsqueeze(1)
+        test_dataloader = next(iter(test_dataloader)).to(self.config.device)
         self.model.eval()
 
         new_smiles_list = [torch.tensor(self.vocab.pad_token_ids, dtype=torch.long,
@@ -133,7 +135,7 @@ class Trainer(TrainerBase):
         end_smiles_list = [False for _ in range(gen_batch_size)]
 
         for i in range(1, max_length + 1):  # 列
-            logits = self(input_ids = test_dataloader, lengths = lens, is_train=False)
+            logits = self(input_ids = test_dataloader, lengths = lens)
             probs = [F.softmax(o, dim=-1) for o in logits]
             # sample from probabilities 按照概率采样
             ind_tops = [torch.multinomial(p, 1) for p in probs]
@@ -152,11 +154,22 @@ class Trainer(TrainerBase):
         new_smiles_list = [new_smiles_list[i][:l] for i, l in enumerate(len_smiles_list)]
         return [self.vocab.ids_to_string(t) for t in new_smiles_list]
 
-
     def sample(self, *args, **kwargs):
         n_sample = kwargs.get("n_sample", None)
         if n_sample is None:
             raise KeyError
+        dataset = kwargs.get("dataset", None)
+        if dataset is None:
+            raise KeyError
+        self.dataset = dataset
+        model = kwargs.get("model", None)
+        if model is None:
+            raise KeyError
+        self.model = model.to(self.config.device)
+        vocab = kwargs.get("vocab", None)
+        if vocab is None:
+            raise KeyError
+        self.vocab = vocab
 
         samples = []
         n = n_sample
