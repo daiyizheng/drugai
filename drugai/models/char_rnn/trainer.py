@@ -11,6 +11,7 @@ import numpy as np
 import torch
 import torch.optim as optim
 import torch.nn.functional as F
+import torch.nn as nn
 from tqdm import tqdm
 
 try:
@@ -33,6 +34,9 @@ class Trainer(TrainerBase):
         scheduler = optim.lr_scheduler.StepLR(optimizer, self.config.warmup_steps, self.config.gamma)
         return optimizer, scheduler
 
+    def config_criterion(self, *args, **kwargs):
+        return nn.CrossEntropyLoss(ignore_index=self.vocab.pad_token_ids)
+
     def get_train_dataloader(self):
         return self.dataset.train_dataloader()
 
@@ -49,9 +53,11 @@ class Trainer(TrainerBase):
             "lengths": lengths.to(self.config.device)
         }
         target = target.to(self.config.device)
-        logits = self(**batch)
+        logits, _ = self(**batch)
         loss = self.criterion(logits.view(-1, logits.shape[-1]), target.view(-1))
+
         self.optimizer.zero_grad()
+
         if self.config.n_gpu > 1:
             loss = loss.mean()  # mean() to average on multi-gpu parallel training
         if self.config.gradient_accumulation_steps > 1:
@@ -62,9 +68,9 @@ class Trainer(TrainerBase):
                 scaled_loss.backward()
         else:
             loss.backward()
+        self.optimizer.step()
 
         self.logs["loss"] += loss.item()
-
         self.epoch_data.set_postfix({"loss": self.logs["loss"] / (step+1), **{"step": step+1}})
         self.global_step = 1
 
@@ -74,14 +80,12 @@ class Trainer(TrainerBase):
             else:
                 torch.nn.utils.clip_grad_norm(self.model.parameters(), self.config.max_grad_norm)
 
-
-            self.optimizer.step()
-
         return logits
 
     def get_evaluate_dataloader(self, *args, **kwargs):
         return self.dataset.eval_dataloader()
 
+    @torch.no_grad()
     def evaluate_epoch(self):
         preds_logits = None
         targets = None
@@ -108,7 +112,7 @@ class Trainer(TrainerBase):
             "lengths": lengths.to(self.config.device)
         }
         target = target.to(self.config.device)
-        logits = self(**batch)
+        logits, _ = self(**batch)
         loss = self.criterion(logits.view(-1, logits.shape[-1]), target.view(-1))
         self.logs["eval_loss"] += loss.item()
         self.eval_data.set_postfix({**{"eval_loss": self.logs["eval_loss"] / (step+1)}, **{"eval_step": step+1}})
@@ -117,6 +121,7 @@ class Trainer(TrainerBase):
     def get_predict_dataloader(self, *args, **kwargs):
         return self.dataset.test_dataloader()
 
+    @torch.no_grad()
     def predict(self, gen_batch_size, max_length):
         self.dataset.step(is_train=False, batch_size=gen_batch_size)
         test_dataloader = self.get_predict_dataloader()
@@ -134,8 +139,9 @@ class Trainer(TrainerBase):
         lens = torch.tensor([1 for _ in range(gen_batch_size)], dtype=torch.long, device=self.config.device)
         end_smiles_list = [False for _ in range(gen_batch_size)]
 
+        hiddens = None
         for i in range(1, max_length + 1):  # 列
-            logits = self(input_ids = test_dataloader, lengths = lens)
+            logits, hiddens = self(input_ids=test_dataloader, lengths = lens, hiddens=hiddens)
             probs = [F.softmax(o, dim=-1) for o in logits]
             # sample from probabilities 按照概率采样
             ind_tops = [torch.multinomial(p, 1) for p in probs]
@@ -180,4 +186,3 @@ class Trainer(TrainerBase):
                 n_sample -= len(current_sample)
                 T.update(len(current_sample))
         return samples
-

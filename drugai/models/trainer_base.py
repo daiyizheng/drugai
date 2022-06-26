@@ -32,10 +32,6 @@ class TrainerComponent(Component):
         self.global_step = 1
 
     @abc.abstractmethod
-    def forward(self, *args, **kwargs):
-        raise NotImplementedError
-
-    @abc.abstractmethod
     def config_optimizer(self, *args, **kwargs):
         raise NotImplementedError
 
@@ -104,7 +100,6 @@ class TrainerBase(TrainerComponent):
     def train(self, *args, **kwargs):
         self.tb_writer = SummaryWriter(self.config.tensorboardx_path)
         train_dataloader = self.get_train_dataloader()
-        t_total = len(train_dataloader) // self.config.gradient_accumulation_steps * self.config.epochs
         self.optimizer, self.scheduler = self.config_optimizer()
         # Train!
         logger.info("***** Running training *****")
@@ -115,7 +110,6 @@ class TrainerBase(TrainerComponent):
                     self.config.batch_size * self.config.gradient_accumulation_steps * (
                         torch.distributed.get_world_size() if self.config.local_rank != -1 else 1))
         logger.info("  Gradient Accumulation steps = %d", self.config.gradient_accumulation_steps)
-        logger.info("  Total optimization steps = %d", t_total)
 
         self.model.zero_grad()
 
@@ -126,6 +120,7 @@ class TrainerBase(TrainerComponent):
             self.model.train()
             self.train_epoch()
             if self.config.evaluate_during_training:
+                self.model.eval()
                 self.evaluate()
             self.save_checkpoint()
             for key, value in self.logs.items():
@@ -155,22 +150,26 @@ class TrainerBase(TrainerComponent):
         model = kwargs.get("model", None)
         if model is None:
             raise KeyError
+        self.model = model.to(self.config.device)
+
         dataset = kwargs.get("dataset", None)
         if dataset is None:
             raise KeyError
+        self.dataset: DataSetBase = dataset
+        self.dataset.step(is_train=True)
+
+        vocab = kwargs.get("vocab", None)
+        if vocab is None:
+            raise KeyError
+        self.vocab = vocab
+
         criterion = kwargs.get("criterion", None) or self.config_criterion(*args, **kwargs)
         if criterion is None:
             raise KeyError
-        vocab = kwargs.get("vocab", None)
-        if vocab is None:
-            raise  KeyError
-
         self.criterion = criterion
-        self.model = model.to(self.config.device)
-        self.dataset:DataSetBase = dataset
+
+
         self.compute_metric = kwargs.get("compute_metric", None)
-        self.vocab = vocab
-        self.dataset.step(is_train=True)
         self.train(*args, **kwargs)
 
     def __call__(self, *args, **kwargs):

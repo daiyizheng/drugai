@@ -22,13 +22,16 @@ train_argunents:
   fp16: false
   fp16_opt_level: "01" #['00', '01', '02', and '03']
 
-generate_argunents:
+sample_argunents:
   n_sample: 512
 
 metric_argunents:
-  gen_dir: "../experiments/checkpoints"
+  n_jobs: 2
+  gen_dir: "../experiments/checkpoints/char_rnn_Random_1314"
+  metric_data_dir: null
+  metric_save_dir: "../experiments/checkpoints/char_rnn_Random_1314"
   metric_method:
-    - fraction_valid
+    - valid
     - unique
     - FCD/Test
     - FCD/TestSF
@@ -45,11 +48,10 @@ metric_argunents:
     - SA
     - QED
     - weight
+    - novelty
   unique_k:
     - 1000
     - 10000
-  test_dir: null
-  test_sf_dir: null
 
 model_arguments:
   num_layers: 3

@@ -24,7 +24,11 @@ class RNN(nn.Module):
         self.dropout_rate = dropout_rate
         self.vocab_size = self.input_size = self.output_size = vocab_size
         self.embedding_layer = nn.Embedding(self.vocab_size, self.vocab_size, padding_idx=pad_token_ids)
-        self.lstm_layer = nn.LSTM(self.input_size, self.hidden_size, self.num_layers, dropout=self.dropout_rate, batch_first=True)
+        self.lstm_layer = nn.LSTM(self.input_size,
+                                  self.hidden_size,
+                                  self.num_layers,
+                                  dropout=self.dropout_rate,
+                                  batch_first=True)
         self.linear_layer = nn.Linear(self.hidden_size, self.output_size)
 
     def forward(self,
@@ -37,4 +41,4 @@ class RNN(nn.Module):
         embedd, _ = pad_packed_sequence(embedd, batch_first=True)
         embedd = self.linear_layer(embedd)
 
-        return embedd
+        return embedd, hiddens

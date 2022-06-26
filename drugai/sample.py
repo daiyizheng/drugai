@@ -23,11 +23,11 @@ def get_argparse():
     parser.add_argument("--config_dir", default=None, type=str, required=False,
                         help = "The parameter config path for samples.")
     parser.add_argument("--is_load_save_config", default=True, type=bool, required=True,
-                        help="")
+                        help="is load train config")
     parser.add_argument("--load_save_config", default=None, type=str, required=False,
-                        help="")
-    parser.add_argument("--save_data", default=None, type=str, required=True,
-                        help="")
+                        help="train config path")
+    parser.add_argument("--sample_dir", default=None, type=str, required=True,
+                        help="sample path save path")
 
     return parser
 
@@ -84,7 +84,7 @@ def main():
                             dataset=dataset,
                             vocab=vocab)
     samples = pd.DataFrame(samples, columns=['SMILES'])
-    samples.to_csv(os.path.join(config.save_data, "smiles.csv"), index=False, encoding="utf_8_sig")
+    samples.to_csv(os.path.join(config.sample_dir, config.model_name, "smiles.csv"), index=False, encoding="utf_8_sig")
 
 if __name__ == '__main__':
     main()

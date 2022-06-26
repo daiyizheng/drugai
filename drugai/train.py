@@ -40,8 +40,7 @@ def main():
     seed_everything(config.seed)
 
     ## 模型输出目录
-    config.output_dir = os.path.join(config.output_dir,
-                                   config.model_name.lower() + "_" + config.data_name + "_" + str(config.seed))
+    config.output_dir = os.path.join(config.output_dir, config.model_name.lower())
     if not os.path.exists(config.output_dir):
         os.makedirs(config.output_dir)
 
@@ -83,7 +82,6 @@ def main():
                         hidden_size=config.hidden_size,
                         pad_token_ids=vocab.pad_token_ids)
     collate_fn = partial(default_collate_fn, vocab)
-    criterion = nn.CrossEntropyLoss()
     dataset = dataset_class(train_data=train_dataset,
                             eval_data=eval_dataset,
                             test_data=None,
@@ -92,7 +90,10 @@ def main():
                             num_workers=config.num_workers,
                             collate_fn=collate_fn)
     trainer = trainer_class(config)
-    trainer.fit(model=model,dataset=dataset, vocab=vocab, criterion=criterion)
+    trainer.fit(model=model,
+                dataset=dataset,
+                vocab=vocab,
+                criterion=None)
 
 if __name__ == '__main__':
     main()
