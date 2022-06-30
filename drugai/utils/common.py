@@ -7,15 +7,15 @@
 from __future__ import annotations, print_function
 
 import copy
+import logging
 import os
 import random
 from typing import Optional, Any, Text, Dict
 
 import numpy as np
 import torch
-from torch.nn.utils.rnn import pad_sequence
 
-from drugai import MODEL_CLASSES
+from drugai.utils.constants import ENV_LOG_LEVEL, DEFAULT_LOG_LEVEL
 
 
 def seed_everything(seed):
@@ -46,3 +46,41 @@ def override_defaults(
             setattr(config, key, custom[key])
 
     return config
+
+
+def configure_logging_and_warnings(log_level: Optional[int] = None,
+                                   warn_only_once: bool = False,
+                                   filter_repeated_logs: bool = False
+                                   ) -> None:
+    if log_level is None:
+        log_level_name = os.environ.get(ENV_LOG_LEVEL, DEFAULT_LOG_LEVEL)
+        log_level = logging.getLevelName(log_level_name)
+
+    logging.getLogger("drugai").setLevel(log_level)
+
+    if filter_repeated_logs:  # 过滤重复
+        raise NotImplementedError
+
+    if warn_only_once:  # 过滤警告
+        raise NotImplementedError
+
+def configure_colored_logging(loglevel: Text) -> None:
+    """Configures coloredlogs library for specified loglevel.
+    """
+    import coloredlogs
+
+    loglevel = loglevel or os.environ.get(
+        ENV_LOG_LEVEL, DEFAULT_LOG_LEVEL
+    )
+
+    field_styles = coloredlogs.DEFAULT_FIELD_STYLES.copy()
+    field_styles["asctime"] = {}
+    level_styles = coloredlogs.DEFAULT_LEVEL_STYLES.copy()
+    level_styles["debug"] = {}
+    coloredlogs.install(
+        level=loglevel,
+        use_chroot=False,
+        fmt="%(asctime)s %(levelname)-8s %(name)s  - %(message)s",
+        level_styles=level_styles,
+        field_styles=field_styles,
+    )

@@ -13,7 +13,7 @@ import torch
 import yaml
 import pandas as pd
 
-from drugai import MODEL_CLASSES
+from drugai.models import MODEL_CLASSES
 from drugai.utils.common import override_defaults, seed_everything
 
 logger = logging.getLogger(__file__)

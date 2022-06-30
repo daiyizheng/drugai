@@ -13,6 +13,8 @@ from colorama import Fore, Back, Style
 import argparse
 
 from drugai.cli import (train_cli, sample_cli, metric_cli, visualize_cli)
+from drugai.cli.default_arguments.default import add_logging_options
+from drugai.utils.common import configure_colored_logging, configure_logging_and_warnings
 from drugai.version import __version__
 
 dt = datetime.now()
@@ -41,6 +43,8 @@ def create_arg_parse():
                         help='show version info.')
     # train, sample, metric, vision
     parent_parser = argparse.ArgumentParser(add_help=False)
+    #logging level
+    add_logging_options(parent_parser)
     parent_parsers = [parent_parser]
 
     subparsers = parser.add_subparsers(help="DrugAi commands")
@@ -77,8 +81,13 @@ def main():
     arg_parser = create_arg_parse()
     cmdline_arguments = arg_parser.parse_args()
 
+    log_level = getattr(cmdline_arguments, "loglevel", None)
+    configure_logging_and_warnings(log_level,
+                                   warn_only_once=False,
+                                   filter_repeated_logs=False)
     try:
         if hasattr(cmdline_arguments, "func"):
+            configure_colored_logging(log_level)
             cmdline_arguments.func(cmdline_arguments)
         elif hasattr(cmdline_arguments, "version"):
             print_version()

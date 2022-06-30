@@ -27,5 +27,5 @@ def add_subparser(subparsers: SubParsersAction,
 
 
 def visualize_main(args: argparse.Namespace) -> None:
-    print("visualize")
+    print("train")
 

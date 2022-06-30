@@ -26,4 +26,4 @@ def add_subparser(subparsers: SubParsersAction,
 
 
 def metric_main(args: argparse.Namespace) -> None:
-    print("visualize")
+    print("train")

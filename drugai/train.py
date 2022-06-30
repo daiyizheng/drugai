@@ -14,9 +14,8 @@ from functools import partial
 import torch
 import yaml
 from moses.script_utils import read_smiles_csv
-import torch.nn as nn
 
-from drugai import MODEL_CLASSES
+from drugai.models import MODEL_CLASSES
 from drugai.models.dataset_base import default_collate_fn
 from drugai.utils.common import override_defaults, seed_everything
 
