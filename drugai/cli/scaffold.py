@@ -11,6 +11,7 @@ import sys
 from typing import List, Text
 
 from drugai.cli import SubParsersAction
+from drugai.cli.default_arguments import scaffold_default
 from drugai.utils.constants import AUTHOR_EMAIL
 
 
@@ -25,11 +26,7 @@ def add_subparser(subparsers: SubParsersAction,
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         help="Creates a new config files.",
     )
-    scaffold_parser.add_argument(
-        "--init_dir",
-        default=None,
-        help="Directory where your project should be initialized.",
-    )
+    scaffold_default.set_scaffold_arguments(scaffold_parser)
     scaffold_parser.set_defaults(func=scaffold_main)
 
 
