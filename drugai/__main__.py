@@ -7,12 +7,17 @@
 from __future__ import annotations, print_function
 
 import logging
+import os
 import sys
 from datetime import datetime
 from colorama import Fore, Back, Style
 import argparse
 
-from drugai.cli import (train_cli, sample_cli, metric_cli, visualize_cli)
+from drugai.cli import (
+    train_cli,
+    sample_cli,
+    metric_cli,
+    visualize_cli)
 from drugai.cli.default_arguments.default import add_logging_options
 from drugai.utils.common import configure_colored_logging, configure_logging_and_warnings
 from drugai.version import __version__
@@ -82,7 +87,10 @@ def main():
     cmdline_arguments = arg_parser.parse_args()
 
     log_level = getattr(cmdline_arguments, "loglevel", None)
+    filename = getattr(cmdline_arguments, "log_dir", None)
+    filename = os.path.join(filename, datetime.now().strftime("%Y%m%d%H%M%S")+".log")
     configure_logging_and_warnings(log_level,
+                                   filename,
                                    warn_only_once=False,
                                    filter_repeated_logs=False)
     try:

@@ -11,6 +11,113 @@ import argparse
 import logging
 
 
+def add_init_param(parser: argparse.ArgumentParser
+                   ) -> None:
+    parser.add_argument(
+        "-ss",
+        "--seed",
+        type=int,
+        default=1314,
+        help="",
+    )
+
+
+def add_model_param(parser: argparse.ArgumentParser
+                    ) -> None:
+    parser.add_argument(
+        "-m",
+        "--model_name",
+        type=str,
+        choices=["char_rnn"],
+        required=True,
+        default="char_rnn",
+        help="",
+    )
+
+
+def add_config_param(parser: argparse.ArgumentParser
+                     ) -> None:
+    parser.add_argument(
+        "-c",
+        "--config",
+        type=str,
+        required=False,
+        default=None,
+        help=""
+    )
+
+
+def add_output_param(parser: argparse.ArgumentParser
+                     ) -> None:
+    parser.add_argument(
+        "-o",
+        "--output_dir",
+        type=str,
+        required=False,
+        default="experiments/checkpoints",
+        help=""
+    )
+
+
+def add_tensorboardx_log_param(parser: argparse.ArgumentParser
+                               ) -> None:
+    parser.add_argument(
+        "--tensorboardx_dir",
+        type=str,
+        required=False,
+        default="experiments/runs",
+        help=""
+    )
+
+
+def add_distributed_param(parser: argparse.ArgumentParser
+                          ) -> None:
+    parser.add_argument(
+        "--local_rank",
+        type=int,
+        default=-1,
+        help="",
+    )
+
+
+def add_parallel_param(parser: argparse.ArgumentParser
+                       ) -> None:
+    parser.add_argument(
+        "--num_workers",
+        type=int,
+        default=0,
+        help="",
+    )
+
+
+def add_f16_param(parser: argparse.ArgumentParser
+                  ) -> None:
+    parser.add_argument(
+        "--fp16",
+        type=bool,
+        default=False,
+        help="",
+    )
+
+    parser.add_argument(
+        "--fp16_opt_level",
+        type=str,
+        choices=['00', '01', '02', '03'],
+        default='01',
+        help="",
+    )
+
+
+def add_device_param(parser: argparse.ArgumentParser
+                     ) -> None:
+    parser.add_argument(
+        "--no_cuda",
+        type=bool,
+        default=False,
+        help="",
+    )
+
+
 def add_logging_options(parser: argparse.ArgumentParser) -> None:
     """Add options to an argument parser to configure logging levels."""
     logging_arguments = parser.add_argument_group(
@@ -36,6 +143,12 @@ def add_logging_options(parser: argparse.ArgumentParser) -> None:
         action="store_const",
         dest="loglevel",
         const=logging.DEBUG,
+    )
+    logging_arguments.add_argument(
+        "--log_dir",
+        type=str,
+        default="experiments/logs",
+        help=""
     )
     logging_arguments.add_argument(
         "--quiet",

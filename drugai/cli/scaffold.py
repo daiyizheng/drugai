@@ -1,33 +1,29 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# @Time    : 2022/6/26 21:09
+# @Time    : 2022/7/7 9:10
 # @Author  : Yizheng Dai
 # @Email   : 387942239@qq.com
-# @File    : vis_cli.py
+# @File    : scaffold.py
 from __future__ import annotations, print_function
-
-from typing import List
 import argparse
+from typing import List
 
 from drugai.cli import SubParsersAction
-from drugai.cli.default_arguments import visualize_default
 
 
 def add_subparser(subparsers: SubParsersAction,
                   parents: List[argparse.ArgumentParser]
                   ) -> None:
     """Add all test parsers."""
-    visualize_parser = subparsers.add_parser(
-        "visualize",
+    scaffold_parser = subparsers.add_parser(
+        "init",
         parents=parents,
         conflict_handler="resolve",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-        help="Visualize molecular image.",
+        help="Creates a new config files.",
     )
-    visualize_parser.set_defaults(func=visualize_main)
-    visualize_default.set_visualize_arguments(visualize_parser)
+    scaffold_parser.set_defaults(func=scaffold_main)
 
 
-def visualize_main(args: argparse.Namespace) -> None:
-    print("visualize")
-
+def scaffold_main(args: argparse.Namespace) -> None:
+    print("scaffold")

@@ -1,0 +1,43 @@
+infomation:
+  current_version: "1.0"
+
+
+train_argunents:
+  warmup_steps: 10
+  gamma: 0.5
+  max_grad_norm: 1.0
+
+
+metric_argunents:
+  n_jobs: 2
+  gen_dir: "../experiments/checkpoints/char_rnn_Random_1314"
+  metric_data_dir: null
+  metric_save_dir: "../experiments/checkpoints/char_rnn_Random_1314"
+  metric_method:
+    - valid
+    - unique
+    - FCD/Test
+    - FCD/TestSF
+    - SNN/Test
+    - SNN/TestSF
+    - Frag/Test
+    - Frag/TestSF
+    - Scaf/Test
+    - Scaf/TestSF
+    - IntDiv
+    - IntDiv2
+    - Filters
+    - logP
+    - SA
+    - QED
+    - weight
+    - novelty
+  unique_k:
+    - 1000
+    - 10000
+
+model_arguments:
+  num_layers: 3
+  hidden_size: 768
+  padding_ids: 0
+  dropout_rate: 0.5

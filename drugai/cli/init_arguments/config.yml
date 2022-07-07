@@ -1,0 +1,68 @@
+infomation:
+  current_version: "1.0"
+
+data_arguments:
+  seed: 1314
+  train_dir: null
+  eval_dir: null
+  test_dir:  null
+  data_name: ""
+  model_name: "char_rnn"
+
+train_argunents:
+  max_length: 100
+  batch_size: 512
+  epochs: 10
+  learning_rate: 0.001
+  gradient_accumulation_steps: 1
+  evaluate_during_training: true
+  warmup_steps: 10
+  gamma: 0.5
+  max_grad_norm: 1.0
+  local_rank: -1
+  no_cuda: false
+  num_workers: 0
+  fp16: false
+  fp16_opt_level: "01" #['00', '01', '02', and '03']
+
+sample_argunents:
+  n_sample: 512
+
+metric_argunents:
+  n_jobs: 2
+  gen_dir: "../experiments/checkpoints/char_rnn_Random_1314"
+  metric_data_dir: null
+  metric_save_dir: "../experiments/checkpoints/char_rnn_Random_1314"
+  metric_method:
+    - valid
+    - unique
+    - FCD/Test
+    - FCD/TestSF
+    - SNN/Test
+    - SNN/TestSF
+    - Frag/Test
+    - Frag/TestSF
+    - Scaf/Test
+    - Scaf/TestSF
+    - IntDiv
+    - IntDiv2
+    - Filters
+    - logP
+    - SA
+    - QED
+    - weight
+    - novelty
+  unique_k:
+    - 1000
+    - 10000
+
+model_arguments:
+  num_layers: 3
+  hidden_size: 768
+  padding_ids: 0
+  dropout_rate: 0.5
+
+output_arguments:
+  output_dir: "../experiments/checkpoints"
+  tensorboardx_path: "../experiments/runs"
+  log_dir: "../experiments/logs"

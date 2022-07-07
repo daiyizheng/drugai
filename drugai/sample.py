@@ -18,10 +18,11 @@ from drugai.utils.common import override_defaults, seed_everything
 
 logger = logging.getLogger(__file__)
 
+
 def get_argparse():
     parser = argparse.ArgumentParser()
     parser.add_argument("--config_dir", default=None, type=str, required=False,
-                        help = "The parameter config path for samples.")
+                        help="The parameter config path for samples.")
     parser.add_argument("--is_load_save_config", default=True, type=bool, required=True,
                         help="is load train config")
     parser.add_argument("--load_save_config", default=None, type=str, required=False,
@@ -30,6 +31,7 @@ def get_argparse():
                         help="sample path save path")
 
     return parser
+
 
 def main():
     config = get_argparse().parse_args()
@@ -79,13 +81,13 @@ def main():
                             num_workers=config.num_workers,
                             collate_fn=None)
     trainer = trainer_class(config)
-    samples= trainer.sample(n_sample=config.n_sample,
-                            model=model,
-                            dataset=dataset,
-                            vocab=vocab)
+    samples = trainer.sample(n_sample=config.n_sample,
+                             model=model,
+                             dataset=dataset,
+                             vocab=vocab)
     samples = pd.DataFrame(samples, columns=['SMILES'])
     samples.to_csv(os.path.join(config.sample_dir, config.model_name, "smiles.csv"), index=False, encoding="utf_8_sig")
 
+
 if __name__ == '__main__':
     main()
-

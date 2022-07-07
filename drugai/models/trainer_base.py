@@ -98,7 +98,7 @@ class TrainerBase(TrainerComponent):
         return logits
 
     def train(self, *args, **kwargs):
-        self.tb_writer = SummaryWriter(self.config.tensorboardx_path)
+        self.tb_writer = SummaryWriter(self.config.tensorboardx_dir)
         train_dataloader = self.get_train_dataloader()
         self.optimizer, self.scheduler = self.config_optimizer()
         # Train!
@@ -167,7 +167,6 @@ class TrainerBase(TrainerComponent):
         if criterion is None:
             raise KeyError
         self.criterion = criterion
-
 
         self.compute_metric = kwargs.get("compute_metric", None)
         self.train(*args, **kwargs)

@@ -6,11 +6,15 @@
 # @File    : train_cli.py
 from __future__ import annotations, print_function
 
+import logging
 from typing import List
 import argparse
 
 from drugai.cli import SubParsersAction
+from drugai.cli.default_arguments import train_default
+from drugai.run import RunTask
 
+logger = logging.getLogger(__name__)
 
 def add_subparser(subparsers: SubParsersAction,
                   parents: List[argparse.ArgumentParser]
@@ -24,7 +28,9 @@ def add_subparser(subparsers: SubParsersAction,
         help="train molecular.",
     )
     train_parser.set_defaults(func=train_main)
+    train_default.set_train_arguments(train_parser)
 
 
 def train_main(args: argparse.Namespace) -> None:
-    print("train")
+    logger.info("train drugai")
+    RunTask().train(args)

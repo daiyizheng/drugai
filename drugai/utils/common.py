@@ -49,6 +49,7 @@ def override_defaults(
 
 
 def configure_logging_and_warnings(log_level: Optional[int] = None,
+                                   filename:Text=None,
                                    warn_only_once: bool = False,
                                    filter_repeated_logs: bool = False
                                    ) -> None:
@@ -57,6 +58,11 @@ def configure_logging_and_warnings(log_level: Optional[int] = None,
         log_level = logging.getLevelName(log_level_name)
 
     logging.getLogger("drugai").setLevel(log_level)
+
+    if filename is not None:
+        if not os.path.exists(filename):
+            os.makedirs(os.path.dirname(filename))
+        logging.FileHandler(filename)
 
     if filter_repeated_logs:  # 过滤重复
         raise NotImplementedError
