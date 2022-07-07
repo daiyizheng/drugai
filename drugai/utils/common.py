@@ -90,3 +90,4 @@ def configure_colored_logging(loglevel: Text) -> None:
         level_styles=level_styles,
         field_styles=field_styles,
     )
+

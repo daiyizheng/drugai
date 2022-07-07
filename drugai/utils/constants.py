@@ -5,7 +5,7 @@
 # @Email   : 387942239@qq.com
 # @File    : constants.py
 
-
+AUTHOR_EMAIL="387942239@qq.com"
 
 # logging setting
 DEFAULT_LOG_LEVEL = "INFO"
