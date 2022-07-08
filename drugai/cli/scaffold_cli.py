@@ -26,6 +26,11 @@ def add_subparser(subparsers: SubParsersAction,
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         help="Creates a new config files.",
     )
+    scaffold_parser.add_argument(
+        "--init_dir",
+        default=None,
+        help="Directory where your project should be initialized.",
+    )
     scaffold_default.set_scaffold_arguments(scaffold_parser)
     scaffold_parser.set_defaults(func=scaffold_main)
 
@@ -70,7 +75,9 @@ def init_project(path: Text) -> None:
     print(f"Created project directory at '{os.getcwd()}'.")
 
 
-def scaffold_main(args: argparse.Namespace) -> None:
+def scaffold_main(args: argparse.Namespace
+                  ) -> None:
+
     import questionary
     print("\033[92m Welcome to DrugAi! 🤖\n \033[0m")
 
@@ -89,9 +96,7 @@ def scaffold_main(args: argparse.Namespace) -> None:
             questionary.text(
                 "Please enter a path where the project will be "
                 "created [default: current directory]"
-            )
-                .skip_if(args.no_prompt, default="")
-                .ask()
+            ).ask()
         )
 
     if path == "":

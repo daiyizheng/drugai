@@ -144,12 +144,7 @@ def add_logging_options(parser: argparse.ArgumentParser) -> None:
         dest="loglevel",
         const=logging.DEBUG,
     )
-    logging_arguments.add_argument(
-        "--log_dir",
-        type=str,
-        default="experiments/logs",
-        help=""
-    )
+
     logging_arguments.add_argument(
         "--quiet",
         help="Be quiet! Sets logging level to WARNING.",

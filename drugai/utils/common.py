@@ -10,6 +10,7 @@ import copy
 import logging
 import os
 import random
+import sys
 from typing import Optional, Any, Text, Dict
 
 import numpy as np
@@ -49,7 +50,6 @@ def override_defaults(
 
 
 def configure_logging_and_warnings(log_level: Optional[int] = None,
-                                   filename:Text=None,
                                    warn_only_once: bool = False,
                                    filter_repeated_logs: bool = False
                                    ) -> None:
@@ -59,16 +59,12 @@ def configure_logging_and_warnings(log_level: Optional[int] = None,
 
     logging.getLogger("drugai").setLevel(log_level)
 
-    if filename is not None:
-        if not os.path.exists(filename):
-            os.makedirs(os.path.dirname(filename))
-        logging.FileHandler(filename)
-
     if filter_repeated_logs:  # 过滤重复
         raise NotImplementedError
 
     if warn_only_once:  # 过滤警告
         raise NotImplementedError
+
 
 def configure_colored_logging(loglevel: Text) -> None:
     """Configures coloredlogs library for specified loglevel.

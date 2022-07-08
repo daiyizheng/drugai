@@ -9,6 +9,7 @@ from __future__ import annotations, print_function
 import logging
 import os
 import sys
+sys.path.insert(0,"./")
 from datetime import datetime
 from colorama import Fore, Back, Style
 import argparse
@@ -17,7 +18,8 @@ from drugai.cli import (
     train_cli,
     sample_cli,
     metric_cli,
-    visualize_cli)
+    visualize_cli,
+    scaffold_cli)
 from drugai.cli.default_arguments.default import add_logging_options
 from drugai.utils.common import configure_colored_logging, configure_logging_and_warnings
 from drugai.version import __version__
@@ -42,10 +44,10 @@ def create_arg_parse():
     parser = argparse.ArgumentParser(prog="drugai",
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter,
                                      description="DrugAi command line Tools. Rasa allows you to build")
-    parser.add_argument('--version', '-v',
-                        action="store_true",
-                        default=__version__,
-                        help='show version info.')
+    parser.add_argument( "--version",
+                         action="store_true",
+                         default=argparse.SUPPRESS,
+                         help="Print installed drugai version",)
     # train, sample, metric, vision
     parent_parser = argparse.ArgumentParser(add_help=False)
     #logging level
@@ -58,7 +60,7 @@ def create_arg_parse():
     sample_cli.add_subparser(subparsers, parents=parent_parsers)
     metric_cli.add_subparser(subparsers, parents=parent_parsers)
     visualize_cli.add_subparser(subparsers, parents=parent_parsers)
-
+    scaffold_cli.add_subparser(subparsers, parents=parent_parsers)
     return parser
 
 
@@ -86,15 +88,14 @@ def main():
     arg_parser = create_arg_parse()
     cmdline_arguments = arg_parser.parse_args()
 
-    log_level = getattr(cmdline_arguments, "loglevel", None)
-    filename = getattr(cmdline_arguments, "log_dir", None)
-    filename = os.path.join(filename, datetime.now().strftime("%Y%m%d%H%M%S")+".log")
-    configure_logging_and_warnings(log_level,
-                                   filename,
-                                   warn_only_once=False,
-                                   filter_repeated_logs=False)
+
     try:
         if hasattr(cmdline_arguments, "func"):
+
+            log_level = getattr(cmdline_arguments, "loglevel", None)
+            configure_logging_and_warnings(log_level,
+                                           warn_only_once=False,
+                                           filter_repeated_logs=False)
             configure_colored_logging(log_level)
             cmdline_arguments.func(cmdline_arguments)
         elif hasattr(cmdline_arguments, "version"):
