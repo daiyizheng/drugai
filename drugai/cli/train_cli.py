@@ -12,9 +12,11 @@ import argparse
 
 from drugai.cli import SubParsersAction
 from drugai.cli.default_arguments import train_default
-from drugai.run import RunTask
+from drugai.task import train
+from drugai.utils.common import seed_everything
 
 logger = logging.getLogger(__name__)
+
 
 def add_subparser(subparsers: SubParsersAction,
                   parents: List[argparse.ArgumentParser]
@@ -33,4 +35,6 @@ def add_subparser(subparsers: SubParsersAction,
 
 def train_main(args: argparse.Namespace) -> None:
     logger.info("train drugai")
-    RunTask().train(args)
+    ## 随机种子
+    seed_everything(args.seed)
+    train(args)

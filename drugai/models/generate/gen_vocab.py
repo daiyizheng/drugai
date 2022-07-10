@@ -1,14 +1,14 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# @Time    : 2022/6/15 22:33
+# @Time    : 2022/7/9 18:10
 # @Author  : Yizheng Dai
 # @Email   : 387942239@qq.com
-# @File    : vocab.py
+# @File    : generate_vocab.py
 from __future__ import annotations, print_function
 
-import abc
-
 import torch
+
+from drugai.models.vocab import Vocab
 
 
 class SpecialTokens:
@@ -18,16 +18,16 @@ class SpecialTokens:
     unk_token = '<UNK>'
 
 
-class Vocab(abc.ABC):
+class CharRNNVocab(Vocab):
     def __init__(self, data, special_token=SpecialTokens):
         if (special_token.bos_token in data) or (special_token.eos_token in data) or (
                 special_token.pad_token in data) or (special_token.unk_token in data):
             raise ValueError('SpecialTokens in chars')
 
-        all_syms = sorted(list(data))+ [special_token.pad_token,
-                                        special_token.unk_token,
-                                        special_token.bos_token,
-                                        special_token.eos_token]
+        all_syms = sorted(list(data)) + [special_token.pad_token,
+                                         special_token.unk_token,
+                                         special_token.bos_token,
+                                         special_token.eos_token]
 
         self.special_token = special_token
         self.c2i = {c: i for i, c in enumerate(all_syms)}

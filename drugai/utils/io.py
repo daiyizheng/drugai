@@ -6,8 +6,11 @@
 # @File    : io.py
 from __future__ import annotations, print_function
 
-from typing import Text
+import errno
+from pathlib import Path
+from typing import Text, Union, List, Any
 import os
+from ruamel import yaml as yaml
 
 import pandas as pd
 import numpy as np
@@ -15,8 +18,41 @@ import numpy as np
 AVAILABLE_SPLITS = ['train', 'test', 'test_scaffolds']
 
 
+def _is_ascii(text: Text) -> bool:
+    return all(ord(character) < 128 for character in text)
+
+
+def read_file(filename) -> Any:
+    with open(filename, encoding="utf-8") as f:
+        return f.read()
+
+
+def read_yaml(content: Text,
+              reader_type: Union[Text, List[Text]] = "safe"
+              ) -> Any:
+    if _is_ascii(content):
+        # Required to make sure emojis are correctly parsed
+        content = (
+            content.encode("utf-8")
+                .decode("raw_unicode_escape")
+                .encode("utf-16", "surrogatepass")
+                .decode("utf-16")
+        )
+
+    yaml_parser = yaml.YAML(typ=reader_type)
+    yaml_parser.preserve_quotes = True
+
+    return yaml_parser.load(content) or {}
+
+
+def read_config_yaml(filename: Union[Text, Path]) -> Any:
+    content = read_file(filename)
+    return read_yaml(content)
+
+
 def read_csv(path: Text):
     return pd.read_csv(path)
+
 
 def get_dataset(split='train'):
     """
@@ -40,7 +76,7 @@ def get_dataset(split='train'):
         raise ValueError(
             f"Unknown split {split}. "
             f"Available splits: {AVAILABLE_SPLITS}")
-    path = os.path.join(base_path, 'resources', split+'.csv.gz')
+    path = os.path.join(base_path, 'resources', split + '.csv.gz')
     smiles = pd.read_csv(path, compression='gzip')['SMILES'].values
     return smiles
 
@@ -50,5 +86,18 @@ def get_statistics(split='test'):
     code from moses:
     """
     base_path = os.path.dirname(os.path.dirname(__file__))
-    path = os.path.join(base_path, 'resources', split+'_stats.npz')
+    path = os.path.join(base_path, 'resources', split + '_stats.npz')
     return np.load(path, allow_pickle=True)['stats'].item()
+
+
+def create_directory(directory_path: Text) -> None:
+    """Creates a directory and its super paths.
+
+    Succeeds even if the path already exists."""
+
+    try:
+        os.makedirs(directory_path)
+    except OSError as e:
+        # be happy if someone already created the path
+        if e.errno != errno.EEXIST:
+            raise

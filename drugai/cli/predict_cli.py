@@ -15,15 +15,16 @@ def add_subparser(subparsers: SubParsersAction,
                   parents: List[argparse.ArgumentParser]
                   ) -> None:
     """Add all test parsers."""
-    sample_parser = subparsers.add_parser(
-        "sample",
+    predict_parser = subparsers.add_parser(
+        "predict",
         parents=parents,
         conflict_handler="resolve",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         help="sample molecular .",
     )
-    sample_parser.set_defaults(func=sample_main)
+    predict_parser.set_defaults(func=predict_main)
 
 
-def sample_main(args: argparse.Namespace) -> None:
-    print("sample")
+def predict_main(args: argparse.Namespace) -> None:
+
+    print("predict")

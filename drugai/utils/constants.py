@@ -11,4 +11,8 @@ AUTHOR_EMAIL="387942239@qq.com"
 DEFAULT_LOG_LEVEL = "INFO"
 ENV_LOG_LEVEL = "LOG_LEVEL"
 
+
+## output
+DEFAULT_MODELS_PATH = "models"
+DEFAULT_RESULTS_PATH = "results"
 ## resources

@@ -39,7 +39,8 @@ def add_input_data_param(parser: Union[argparse.ArgumentParser, argparse._Action
     parser.add_argument(
         "--eval_dir",
         type=str,
-        required=True,
+        default=None,
+        required=False,
         help="",
     )
     parser.add_argument(
@@ -49,50 +50,6 @@ def add_input_data_param(parser: Union[argparse.ArgumentParser, argparse._Action
         help="",
     )
 
-
-def add_train_base_parm(parser: argparse.ArgumentParser
-                        ) -> None:
-    parser.add_argument(
-        "--epochs",
-        type=int,
-        default=10,
-        help="",
-    )
-
-    parser.add_argument(
-        "--batch_size",
-        type=int,
-        default=512,
-        help="",
-    )
-
-    parser.add_argument(
-        "--learning_rate",
-        type=float,
-        default=0.001,
-        help="",
-    )
-
-    parser.add_argument(
-        "--gradient_accumulation_steps",
-        type=int,
-        default=1,
-        help="",
-    )
-
-    parser.add_argument(
-        "--evaluate_during_training",
-        type=bool,
-        default=True,
-        help="",
-    )
-
-    parser.add_argument(
-        "--max_length",
-        type=int,
-        default=100,
-        help="",
-    )
 
 
 def set_train_arguments(parser: argparse.ArgumentParser) -> None:
@@ -107,4 +64,3 @@ def set_train_arguments(parser: argparse.ArgumentParser) -> None:
     add_model_param(parser)
     add_input_data_param(parser)
     add_config_param(parser)
-    add_train_base_parm(parser)

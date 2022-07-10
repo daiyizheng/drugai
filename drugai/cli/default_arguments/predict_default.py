@@ -9,6 +9,6 @@ from __future__ import annotations, print_function
 import argparse
 
 
-def set_sample_arguments(parser: argparse.ArgumentParser) -> None:
+def set_predict_arguments(parser: argparse.ArgumentParser) -> None:
     """Sets the CLI arguments for `drugai sample."""
     pass

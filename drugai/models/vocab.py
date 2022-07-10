@@ -1,14 +1,12 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# @Time    : 2022/6/21 23:08
+# @Time    : 2022/7/9 18:02
 # @Author  : Yizheng Dai
 # @Email   : 387942239@qq.com
-# @File    : vae.py
+# @File    : vocab.py
 from __future__ import annotations, print_function
+import abc
 
-import torch.nn as nn
 
-
-class VAE(nn.Module):
-    def __init__(self):
-        super(VAE, self).__init__()
+class Vocab(abc.ABC):
+    pass

@@ -9,6 +9,9 @@ from __future__ import annotations, print_function
 
 import argparse
 import logging
+from typing import Optional, Text
+
+from drugai.utils.constants import DEFAULT_MODELS_PATH
 
 
 def add_init_param(parser: argparse.ArgumentParser
@@ -25,12 +28,11 @@ def add_init_param(parser: argparse.ArgumentParser
 def add_model_param(parser: argparse.ArgumentParser
                     ) -> None:
     parser.add_argument(
-        "-m",
-        "--model_name",
+        "-mn",
+        "--model",
         type=str,
-        choices=["char_rnn"],
-        required=True,
-        default="char_rnn",
+        required=False,
+        default="models/",
         help="",
     )
 
@@ -47,14 +49,15 @@ def add_config_param(parser: argparse.ArgumentParser
     )
 
 
-def add_output_param(parser: argparse.ArgumentParser
+def add_output_param(parser: argparse.ArgumentParser,
+                     default: Optional[Text] = DEFAULT_MODELS_PATH,
                      ) -> None:
     parser.add_argument(
         "-o",
-        "--output_dir",
+        "--out",
         type=str,
         required=False,
-        default="experiments/checkpoints",
+        default=default,
         help=""
     )
 

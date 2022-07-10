@@ -16,7 +16,7 @@ import argparse
 
 from drugai.cli import (
     train_cli,
-    sample_cli,
+    predict_cli,
     metric_cli,
     visualize_cli,
     scaffold_cli)
@@ -57,7 +57,7 @@ def create_arg_parse():
     subparsers = parser.add_subparsers(help="DrugAi commands")
 
     train_cli.add_subparser(subparsers, parents=parent_parsers)
-    sample_cli.add_subparser(subparsers, parents=parent_parsers)
+    predict_cli.add_subparser(subparsers, parents=parent_parsers)
     metric_cli.add_subparser(subparsers, parents=parent_parsers)
     visualize_cli.add_subparser(subparsers, parents=parent_parsers)
     scaffold_cli.add_subparser(subparsers, parents=parent_parsers)
