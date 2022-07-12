@@ -11,7 +11,7 @@ import argparse
 import logging
 from typing import Optional, Text
 
-from drugai.utils.constants import DEFAULT_MODELS_PATH
+from drugai.utils.constants import DEFAULT_MODELS_PATH, DEFAULT_CONFIG_PATH
 
 
 def add_init_param(parser: argparse.ArgumentParser
@@ -28,7 +28,7 @@ def add_init_param(parser: argparse.ArgumentParser
 def add_model_param(parser: argparse.ArgumentParser
                     ) -> None:
     parser.add_argument(
-        "-mn",
+        "-m",
         "--model",
         type=str,
         required=False,
@@ -37,14 +37,15 @@ def add_model_param(parser: argparse.ArgumentParser
     )
 
 
-def add_config_param(parser: argparse.ArgumentParser
+def add_config_param(parser: argparse.ArgumentParser,
+                     default: Optional[Text] = DEFAULT_CONFIG_PATH
                      ) -> None:
     parser.add_argument(
         "-c",
         "--config",
         type=str,
         required=False,
-        default=None,
+        default=default,
         help=""
     )
 

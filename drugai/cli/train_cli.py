@@ -34,7 +34,7 @@ def add_subparser(subparsers: SubParsersAction,
 
 
 def train_main(args: argparse.Namespace) -> None:
-    logger.info("train drugai")
+    logger.info("train drugai start")
     ## 随机种子
     seed_everything(args.seed)
     train(args)

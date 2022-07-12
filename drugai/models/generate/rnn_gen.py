@@ -109,7 +109,7 @@ class RNNGenerate(GenerateComponent):
     def config_criterion(self, *args, **kwargs):
         return nn.CrossEntropyLoss(ignore_index=self.component_config["pad_token_ids"])
 
-    def process(self, file_dir: Text) -> np.ndarray:
+    def load_data(self, file_dir: Text) -> np.ndarray:
         dataset = read_smiles_csv(file_dir)
         return dataset
 
@@ -118,7 +118,7 @@ class RNNGenerate(GenerateComponent):
 
     def train(self, train_dir: Text, eval_dir: Text = None):
         ## 读取数据
-        train_dataset = self.process(train_dir)
+        train_dataset = self.load_data(train_dir)
 
         self.vocab = self.build_vocab(train_dataset)
         self.component_config["vocab_size"] = len(self.vocab)
@@ -188,7 +188,7 @@ class RNNGenerate(GenerateComponent):
         return logits
 
     def evaluate(self, eval_dir: Text):
-        eval_dataset = self.process(eval_dir)
+        eval_dataset = self.load_data(eval_dir)
         eval_dataloader = self.get_evaluate_dataloader(eval_dataset)
 
         self.eval_data = tqdm(eval_dataloader, desc='Evaluation')
@@ -241,20 +241,23 @@ class RNNGenerate(GenerateComponent):
                           collate_fn=partial(default_collate_fn, self.vocab))
 
     def get_predict_dataloader(self, *args, **kwargs):
-        dataset = [torch.tensor([self.component_config["bos_token_ids"]],
+        dataset = [torch.tensor([self.vocab.bos_token_ids],
                                 dtype=torch.long) for _ in range(self.component_config["batch_size"])]
-        dataset = torch.tensor(dataset, dtype=torch.long).unsqueeze(1)
-        return dataset
+        dataset = torch.tensor(dataset, dtype=torch.long)
+        dataset = dataset.unsqueeze(1)
+        return DataLoader(dataset,
+                          batch_size=self.component_config["batch_size"],
+                          shuffle=False,
+                          collate_fn=None)
 
     @torch.no_grad()
-    def predict_epoch(self,
-                      batch_size: int,
-                      max_length: int,
-                      **kwargs
-                      ) -> List[str]:
+    def predict(self,
+                batch_size: int,
+                max_length: int,
+                **kwargs
+                ) -> List[str]:
 
         test_dataloader = self.get_predict_dataloader()
-
         test_dataloader = next(iter(test_dataloader)).to(self.device)
         self.model.eval()
 
@@ -290,7 +293,7 @@ class RNNGenerate(GenerateComponent):
         new_smiles_list = [new_smiles_list[i][:l] for i, l in enumerate(len_smiles_list)]
         return [self.vocab.ids_to_string(t) for t in new_smiles_list]
 
-    def predict(self, *args, **kwargs)->Dict:
+    def process(self, *args, **kwargs) -> Dict:
         n_sample = self.component_config["n_sample"]
         batch_size = self.component_config["batch_size"]
         max_length = self.component_config["max_length"]
@@ -300,25 +303,26 @@ class RNNGenerate(GenerateComponent):
         n = n_sample
         with tqdm(n, desc="Generating sample") as T:
             while n_sample > 0:
-                current_sample = self.predict_epoch(min(n, batch_size), max_length)
+                current_sample = self.predict(min(n, batch_size), max_length)
                 samples.extend(current_sample)
                 n_sample -= len(current_sample)
                 T.update(len(current_sample))
-        return {"SIMILES":samples}
+        return {"SIMILES": samples}
 
     def persist(self, model_dir: Text
                 ) -> Optional[Dict[Text, Any]]:
         model_to_save = self.model.module if hasattr(self.model, 'module') else self.model
         ## 保存模型
-        torch.save(model_to_save.state_dict(), os.path.join(model_dir, "model.pt"))
+        torch.save(model_to_save.state_dict(), os.path.join(model_dir, self.name + "_model.pt"))
         ## 保存字典
-        torch.save(self.vocab, os.path.join(model_dir, "vocab.pt"))
+        torch.save(self.vocab, os.path.join(model_dir, self.name + "_vocab.pt"))
         ## 保存参数
-        torch.save(self.component_config, os.path.join(model_dir, "component_config.pt"))
-        return {"vocab_file": os.path.join(model_dir, "vocab.pt"),
-                "model_file": os.path.join(model_dir, "model.pt"),
-                "component_config": os.path.join(model_dir, "component_config.pt")}
+        torch.save(self.component_config, os.path.join(model_dir, self.name + "_component_config.pt"))
+        return {"vocab_file": os.path.join(model_dir, self.name+"_vocab.pt"),
+                "model_file": os.path.join(model_dir, self.name+"_model.pt"),
+                "component_config": os.path.join(model_dir, self.name+"_component_config.pt")}
 
+    @classmethod
     def load(cls,
              meta: Dict[Text, Any],
              model_dir: Optional[Text] = None,
@@ -329,30 +333,10 @@ class RNNGenerate(GenerateComponent):
                     dropout_rate=meta["dropout_rate"],
                     hidden_size=meta["hidden_size"],
                     pad_token_ids=meta["pad_token_ids"])
-        model_state_dict = torch.load(os.path.join(model_dir, "model.pt"))
+        model_state_dict = torch.load(os.path.join(model_dir, meta["name"]+"_model.pt"))
         model.load_state_dict(model_state_dict)
-        vocab = torch.load(os.path.join(model_dir, "vocab.pt"))
+        vocab = torch.load(os.path.join(model_dir, meta["name"]+"_vocab.pt"))
         return cls(component_config=meta,
                    model=model,
                    vocab=vocab,
                    **kwargs)
-
-# if __name__ == '__main__':
-#     def get_argparse():
-#         parser = argparse.ArgumentParser()
-#         parser.add_argument("--train_dir", default="../../../datasets/train.csv", type=str, required=False, help="")
-#         parser.add_argument("--eval_dir", default="../../../datasets/eval.csv", type=str, required=False, help="")
-#         parser.add_argument("--tensorboardx_dir", default="experiments/runs", type=str, required=False, help="")
-#         parser.add_argument("--local_rank", default=-1, type=int, required=False, help="")
-#         parser.add_argument("--fp16", type=bool, default=False, help="")
-#         parser.add_argument("--no_cuda", type=bool, default=False, help="")
-#         parser.add_argument("--batch_size", type=int, default=512, help="")
-#         return parser
-#
-#
-#     args = get_argparse().parse_args()
-#     trainer = RNNGenerate.create({},
-#                                  no_cuda=False,
-#                                  tensorboardx_dir=args.tensorboardx_dir)
-#
-#     trainer.train(args.train_dir, args.eval_dir)

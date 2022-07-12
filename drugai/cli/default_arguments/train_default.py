@@ -17,25 +17,21 @@ from .default import (add_init_param,
                       add_distributed_param,
                       add_parallel_param,
                       add_f16_param,
-                      add_device_param
-                      )
+                      add_device_param)
 
 
-def add_input_data_param(parser: Union[argparse.ArgumentParser, argparse._ActionsContainer]
-                         ) -> None:
-    parser.add_argument(
-        "-d",
-        "--data_name",
-        type=str,
-        default="UNKNOW",
-        help="",
-    )
+def add_input_train_data_param(parser: Union[argparse.ArgumentParser, argparse._ActionsContainer]
+                               ) -> None:
     parser.add_argument(
         "--train_dir",
         type=str,
         required=True,
         help="",
     )
+
+
+def add_input_eval_data_param(parser: Union[argparse.ArgumentParser, argparse._ActionsContainer]
+                              ) -> None:
     parser.add_argument(
         "--eval_dir",
         type=str,
@@ -43,13 +39,16 @@ def add_input_data_param(parser: Union[argparse.ArgumentParser, argparse._Action
         required=False,
         help="",
     )
+
+
+def add_data_name_param(parser: Union[argparse.ArgumentParser, argparse._ActionsContainer]
+                        ) -> None:
     parser.add_argument(
-        "--test_dir",
+        "--data_name",
         type=str,
-        required=False,
+        default="UNKNOW",
         help="",
     )
-
 
 
 def set_train_arguments(parser: argparse.ArgumentParser) -> None:
@@ -62,5 +61,6 @@ def set_train_arguments(parser: argparse.ArgumentParser) -> None:
     add_f16_param(parser)
     add_device_param(parser)
     add_model_param(parser)
-    add_input_data_param(parser)
+    add_input_train_data_param(parser)
+    add_input_eval_data_param(parser)
     add_config_param(parser)

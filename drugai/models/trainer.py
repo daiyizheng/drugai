@@ -29,11 +29,11 @@ class Trainer(object):
     ) -> Text:
         timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
         path = os.path.abspath(path)
-        model_name = self.pipeline.name
-        dir_name = os.path.join(path, model_name)
-        create_directory(dir_name)
+        # model_name = self.pipeline.name
+        # dir_name = os.path.join(path, model_name)
+        create_directory(path)
 
-        self.pipeline.persist(dir_name)
+        self.pipeline.persist(path)
         return ""
 
     def _build_pipeline(self,

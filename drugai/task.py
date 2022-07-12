@@ -7,12 +7,14 @@
 from __future__ import annotations, print_function
 
 import argparse
+import os
+
 from rdkit.Chem import Draw
 from rdkit import Chem
 
 from drugai.models.interpreter import create_interpreter
 from drugai.models.trainer import Trainer
-from drugai.utils.io import read_config_yaml
+from drugai.utils.io import read_config_yaml, create_directory
 
 
 def train(args: argparse.Namespace):
@@ -31,9 +33,9 @@ def train(args: argparse.Namespace):
 def predict(args: argparse.Namespace):
     config = read_config_yaml(args.config)
     model_dir =  ""  if args.model is None else args.model
-    interpreter = create_interpreter(model_dir, new_config=config)
-    results = interpreter.inference()
-
+    interpreter = create_interpreter(cfg=config, model_dir=model_dir)
+    results = interpreter.inference(test_dir=args.test_dir)
+    interpreter.persist(args.out, results)
 
 
 def visualize(args: argparse.Namespace):

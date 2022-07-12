@@ -7,8 +7,14 @@
 from __future__ import annotations, print_function
 import argparse
 from typing import List
+import logging
 
 from drugai.cli import SubParsersAction
+from drugai.cli.default_arguments import predict_default
+from drugai.task import predict
+from drugai.utils.common import seed_everything
+
+logger = logging.getLogger(__name__)
 
 
 def add_subparser(subparsers: SubParsersAction,
@@ -23,8 +29,11 @@ def add_subparser(subparsers: SubParsersAction,
         help="sample molecular .",
     )
     predict_parser.set_defaults(func=predict_main)
+    predict_default.set_predict_arguments(predict_parser)
 
 
 def predict_main(args: argparse.Namespace) -> None:
-
-    print("predict")
+    logger.info("predict drugai start")
+    ## 随机种子
+    seed_everything(args.seed)
+    predict(args)

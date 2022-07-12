@@ -8,18 +8,39 @@ from __future__ import annotations, print_function
 
 import errno
 from pathlib import Path
-from typing import Text, Union, List, Any
+from typing import Text, Union, List, Any, Dict
 import os
 from ruamel import yaml as yaml
 
 import pandas as pd
 import numpy as np
 
+from drugai.utils.constants import DEFAULT_ENCODING, DEFAULT_CSV_ENCODING
+
 AVAILABLE_SPLITS = ['train', 'test', 'test_scaffolds']
 
 
 def _is_ascii(text: Text) -> bool:
     return all(ord(character) < 128 for character in text)
+
+
+def write_text_file(
+        content: Text,
+        file_path: Union[Text, Path],
+        encoding: Text = DEFAULT_ENCODING,
+        append: bool = False,
+) -> None:
+    mode = "a" if append else "w"
+    with open(file_path, mode, encoding=encoding) as file:
+        file.write(content)
+
+
+def write_dict_to_csv(
+        content: Dict,
+        file_path: Union[Text, Path],
+        encoding: Text = DEFAULT_CSV_ENCODING,
+) -> None:
+    pd.DataFrame(content).to_csv(file_path, encoding=encoding)
 
 
 def read_file(filename) -> Any:
@@ -56,15 +77,9 @@ def read_csv(path: Text):
 
 def get_dataset(split='train'):
     """
-    code from moses:
-    Loads MOSES dataset
-
     Arguments:
         split (str): split to load. Must be
             one of: 'train', 'test', 'test_scaffolds'
-
-    Returns:
-        list with SMILES strings
     """
     if split not in AVAILABLE_SPLITS:
         raise ValueError(

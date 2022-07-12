@@ -67,7 +67,7 @@ def load_component_by_meta(component_meta: Dict[Text, Any],
                            ) -> Optional["Component"]:
     component_name = component_meta.get("class", component_meta["name"])
     component_class = get_component_class(component_name)
-    return component_class.load(component_meta, model_dir, **kwargs)
+    return component_class.load(meta=component_meta, model_dir=model_dir, **kwargs)
 
 
 def create_component_by_config(component_config: Dict[Text, Any],
