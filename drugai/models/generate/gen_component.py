@@ -15,7 +15,7 @@ try:
 except ImportError:
     from tensorboardX import SummaryWriter
 
-from drugai.models.component import Component
+from drugai.component import Component
 
 logger = logging.getLogger(__name__)
 

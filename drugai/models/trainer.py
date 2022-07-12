@@ -46,8 +46,10 @@ class Trainer(object):
         return pipeline
 
     def train(self,
-              args: argparse.Namespace
+              train_dir:Text,
+              eval_dir:Text,
+              **kwargs
               )->"Interpreter":
-        self.pipeline.train(args.train_dir, args.eval_dir)
+        self.pipeline.train(train_dir=train_dir, eval_dir=eval_dir, **kwargs)
 
         return Interpreter(self.pipeline)

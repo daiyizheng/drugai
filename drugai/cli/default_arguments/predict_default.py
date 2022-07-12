@@ -9,7 +9,8 @@ from __future__ import annotations, print_function
 import argparse
 from typing import Union
 
-from drugai.cli.default_arguments.default import add_output_param, add_model_param, add_init_param, add_config_param
+from drugai.cli.default_arguments.default import add_output_param, add_model_param, add_init_param, add_config_param, \
+    add_distributed_param, add_parallel_param, add_f16_param, add_device_param
 from drugai.utils.constants import DEFAULT_RESULTS_PATH
 
 
@@ -22,7 +23,6 @@ def add_input_test_data_param(parser: Union[argparse.ArgumentParser, argparse._A
         help="",
     )
 
-
 def set_predict_arguments(parser: argparse.ArgumentParser) -> None:
     """Sets the CLI arguments for `drugai predict."""
     add_init_param(parser)
@@ -30,3 +30,7 @@ def set_predict_arguments(parser: argparse.ArgumentParser) -> None:
     add_input_test_data_param(parser)
     add_output_param(parser, default=DEFAULT_RESULTS_PATH)
     add_model_param(parser)
+    add_distributed_param(parser)
+    add_parallel_param(parser)
+    add_f16_param(parser)
+    add_device_param(parser)

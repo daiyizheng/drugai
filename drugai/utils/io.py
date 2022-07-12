@@ -7,6 +7,7 @@
 from __future__ import annotations, print_function
 
 import errno
+import json
 from pathlib import Path
 from typing import Text, Union, List, Any, Dict
 import os
@@ -34,13 +35,33 @@ def write_text_file(
     with open(file_path, mode, encoding=encoding) as file:
         file.write(content)
 
+def write_json_to_file(filename: Text, obj: Any, **kwargs: Any) -> None:
+    """Write an object as a json string to a file."""
+
+    write_to_file(filename, json_to_string(obj, **kwargs))
+
+
+def write_to_file(filename: Text, text: Any) -> None:
+    """Write a text to a file."""
+
+    write_text_file(str(text), filename)
+
 
 def write_dict_to_csv(
         content: Dict,
         file_path: Union[Text, Path],
         encoding: Text = DEFAULT_CSV_ENCODING,
 ) -> None:
-    pd.DataFrame(content).to_csv(file_path, encoding=encoding)
+    pd.DataFrame(content).to_csv(file_path,
+                                 index=False,
+                                 encoding=encoding)
+
+
+def json_to_string(obj: Any,
+                   **kwargs: Any) -> Text:
+    indent = kwargs.pop("indent", 2)
+    ensure_ascii = kwargs.pop("ensure_ascii", False)
+    return json.dumps(obj, indent=indent, ensure_ascii=ensure_ascii, **kwargs)
 
 
 def read_file(filename) -> Any:

@@ -8,7 +8,7 @@ from __future__ import annotations, print_function
 
 from typing import Dict, Text, Any
 
-from drugai.models import registry
+from drugai import registry
 
 
 class ComponentBuilder:

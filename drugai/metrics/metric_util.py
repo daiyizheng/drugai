@@ -120,21 +120,3 @@ def get_metrics(config, pool=None):
         pool.close()
         pool.join()
     return metrics
-
-
-import evaluate
-
-METRIC_PATH = os.path.dirname(__file__)
-
-
-def valid(smiles: List[Text], n_jobs: int = 1):
-    metric = evaluate.load(os.path.join(METRIC_PATH, "valid/valid.py"))
-    return metric.compute(smiles=smiles, n_jobs=n_jobs)
-
-
-def unique(predictions: List[Text]):
-    pass
-
-
-def logp(predictions: List[Text]):
-    pass

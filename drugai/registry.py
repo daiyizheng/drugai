@@ -10,14 +10,16 @@ import logging
 import traceback
 from typing import Dict, Text, Any, Optional, Type
 
-from drugai.models.component import Component
+from drugai.metrics.valid_metic import ValidMetic
 from drugai.models.generate.rnn_gen import RNNGenerate
+
 from drugai.utils.common import class_from_module_path
 
 logger = logging.getLogger(__name__)
 
 component_classes = [
-    RNNGenerate
+    RNNGenerate,
+    ValidMetic
 ]
 registered_components = {c.name: c for c in component_classes}
 

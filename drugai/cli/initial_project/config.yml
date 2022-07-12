@@ -10,4 +10,4 @@ predict:
     n_sample: 10000
 
 metric:
-  - name: valid
+  - name: ValidMetic

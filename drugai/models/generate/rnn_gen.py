@@ -116,7 +116,10 @@ class RNNGenerate(GenerateComponent):
     def build_vocab(self, dataset: np.ndarray) -> Vocab:
         return CharRNNVocab.from_data(dataset)
 
-    def train(self, train_dir: Text, eval_dir: Text = None):
+    def train(self,
+              train_dir: Text,
+              eval_dir: Text = None,
+              **kwargs):
         ## 读取数据
         train_dataset = self.load_data(train_dir)
 
@@ -307,7 +310,7 @@ class RNNGenerate(GenerateComponent):
                 samples.extend(current_sample)
                 n_sample -= len(current_sample)
                 T.update(len(current_sample))
-        return {"SIMILES": samples}
+        return {"SMILES": samples}
 
     def persist(self, model_dir: Text
                 ) -> Optional[Dict[Text, Any]]:

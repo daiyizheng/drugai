@@ -11,7 +11,6 @@ from typing import Text, Optional, Dict, Any
 
 import torch
 
-from drugai.models.component import Component
 from drugai.models.component_builder import ComponentBuilder
 from drugai.utils.common import override_defaults
 from drugai.utils.io import create_directory, write_dict_to_csv
@@ -23,9 +22,9 @@ def create_interpreter(cfg: Dict[Text, Any], model_dir: Text, **kwargs):
 
 class Interpreter(object):
     def __init__(self,
-                 pipeline: Component,
+                 pipeline: "Component",
                  **kwargs):
-        self.pipeline: Component = pipeline
+        self.pipeline = pipeline
 
     def inference(self, *args, **kwargs):
         return self.pipeline.process(*args, **kwargs)
@@ -35,7 +34,7 @@ class Interpreter(object):
         model_name = self.pipeline.name
         create_directory(path)
         write_dict_to_csv(content,
-                          file_path=os.path.join(path, model_name+"_results.csv"))
+                          file_path=os.path.join(path, model_name+"_prediction.csv"))
 
     @staticmethod
     def load(cfg:Dict[Text,Any],

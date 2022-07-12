@@ -7,5 +7,6 @@
 from __future__ import annotations, print_function
 
 
-
-
+class Visualize(object):
+    def __init__(self):
+        pass

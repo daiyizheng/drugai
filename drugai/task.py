@@ -12,6 +12,7 @@ import os
 from rdkit.Chem import Draw
 from rdkit import Chem
 
+from drugai import Metric
 from drugai.models.interpreter import create_interpreter
 from drugai.models.trainer import Trainer
 from drugai.utils.io import read_config_yaml, create_directory
@@ -25,15 +26,17 @@ def train(args: argparse.Namespace):
                       local_rank=args.local_rank,
                       fp16=args.fp16,
                       fp16_opt_level=args.fp16_opt_level)
-    interpreter = trainer.train(args)
+    interpreter = trainer.train(train_dir=args.train_dir, eval_dir=args.eval_dir)
     path = args.out
     trainer.persist(path)
 
 
 def predict(args: argparse.Namespace):
     config = read_config_yaml(args.config)
-    model_dir =  ""  if args.model is None else args.model
-    interpreter = create_interpreter(cfg=config, model_dir=model_dir)
+    model_dir = "" if args.model is None else args.model
+    interpreter = create_interpreter(cfg=config,
+                                     model_dir=model_dir,
+                                     no_cuda=args.no_cuda)
     results = interpreter.inference(test_dir=args.test_dir)
     interpreter.persist(args.out, results)
 
@@ -49,4 +52,8 @@ def visualize(args: argparse.Namespace):
 
 
 def metric(args: argparse.Namespace):
-    pass
+    config = read_config_yaml(args.config)
+    met = Metric(config)
+    content = met.compute(args.gen_dir)
+    met.persist(path=args.out, content=content)
+
