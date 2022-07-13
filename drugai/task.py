@@ -7,15 +7,14 @@
 from __future__ import annotations, print_function
 
 import argparse
-import os
+import logging
 
-from rdkit.Chem import Draw
-from rdkit import Chem
-
-from drugai import Metric
+from drugai import Metric, Visualize
 from drugai.models.interpreter import create_interpreter
 from drugai.models.trainer import Trainer
 from drugai.utils.io import read_config_yaml, create_directory
+
+logger = logging.getLogger(__name__)
 
 
 def train(args: argparse.Namespace):
@@ -42,18 +41,14 @@ def predict(args: argparse.Namespace):
 
 
 def visualize(args: argparse.Namespace):
-    smiles = args.smiles
-    mol = Chem.MolFromSmiles(smiles)
-
-    if args.save_file:
-        Draw.MolToFile(mol, args.save_file, size=(150, 150), fitImage=True, imageType='png')
-        return
-    Draw.MolToImage(mol, size=(150, 150), kekulize=True)
+    vs = Visualize()
+    vs.show(smiles=args.smiles,
+            save_file=args.save_file)
 
 
 def metric(args: argparse.Namespace):
     config = read_config_yaml(args.config)
     met = Metric(config)
     content = met.compute(args.gen_dir)
+    # path = os.path.join(args.out, os.path.splitext(os.path.basename(__file__))[0]+"_metric.json")
     met.persist(path=args.out, content=content)
-

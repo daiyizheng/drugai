@@ -8,10 +8,13 @@ from __future__ import annotations, print_function
 
 from typing import List
 import argparse
+import logging
 
 from drugai.cli import SubParsersAction
 from drugai.cli.default_arguments import visualize_default
+from drugai.task import visualize
 
+logger = logging.getLogger(__name__)
 
 def add_subparser(subparsers: SubParsersAction,
                   parents: List[argparse.ArgumentParser]
@@ -29,5 +32,6 @@ def add_subparser(subparsers: SubParsersAction,
 
 
 def visualize_main(args: argparse.Namespace) -> None:
-    print("visualize")
+    logger.info("visualize satrt")
+    visualize(args)
 

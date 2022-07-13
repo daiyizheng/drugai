@@ -53,7 +53,7 @@ class Metric(object):
                 **kwargs):
         path = os.path.abspath(path)
         create_directory(path)
-        write_json_to_file(filename=os.path.join(path, "metric.csv"),
+        write_json_to_file(filename=os.path.join(path, "metric.json"),
                            obj=content)
 
     def _build_metrics(self,
