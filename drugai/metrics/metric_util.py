@@ -28,7 +28,7 @@ def get_metrics(config, pool=None):
     """
     if config.gen_dir is None:
         raise KeyError
-    gen = read_smiles_csv(os.path.join(config.gen_dir, "smiles.csv"))
+    gen = read_smiles_csv(config.gen_dir)
 
     if config.metric_data_dir is None:
         test = get_dataset('test')

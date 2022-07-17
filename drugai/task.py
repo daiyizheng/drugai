@@ -12,7 +12,7 @@ import logging
 from drugai import Metric, Visualize
 from drugai.models.interpreter import create_interpreter
 from drugai.models.trainer import Trainer
-from drugai.utils.io import read_config_yaml, create_directory
+from drugai.utils.io import read_config_yaml
 
 logger = logging.getLogger(__name__)
 
@@ -49,6 +49,8 @@ def visualize(args: argparse.Namespace):
 def metric(args: argparse.Namespace):
     config = read_config_yaml(args.config)
     met = Metric(config)
-    content = met.compute(args.gen_dir)
+    content = met.compute(gen_dir=args.gen_dir,
+                          n_jobs=args.num_workers,
+                          device = "cpu" if args.no_cuda else "cuda")
     # path = os.path.join(args.out, os.path.splitext(os.path.basename(__file__))[0]+"_metric.json")
     met.persist(path=args.out, content=content)

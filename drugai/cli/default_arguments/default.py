@@ -11,7 +11,7 @@ import argparse
 import logging
 from typing import Optional, Text
 
-from drugai.utils.constants import DEFAULT_MODELS_PATH, DEFAULT_CONFIG_PATH
+from drugai.utils.constants import DEFAULT_MODELS_PATH, DEFAULT_CONFIG_PATH, DEFAULT_NUM_WORKERS
 
 
 def add_init_param(parser: argparse.ArgumentParser
@@ -84,12 +84,13 @@ def add_distributed_param(parser: argparse.ArgumentParser
     )
 
 
-def add_parallel_param(parser: argparse.ArgumentParser
+def add_parallel_param(parser: argparse.ArgumentParser,
+                       default= DEFAULT_NUM_WORKERS,
                        ) -> None:
     parser.add_argument(
         "--num_workers",
         type=int,
-        default=0,
+        default=default,
         help="",
     )
 

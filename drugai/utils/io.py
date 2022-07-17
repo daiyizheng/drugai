@@ -96,6 +96,11 @@ def read_csv(path: Text):
     return pd.read_csv(path)
 
 
+def read_smiles_zip(path: Text):
+    return pd.read_csv(path,
+                       compression='gzip')['SMILES'].values
+
+
 def get_dataset(split='train'):
     """
     Arguments:

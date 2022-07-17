@@ -29,21 +29,26 @@ class Metric(object):
         self.metics_pipeline = self._build_metrics(cfg=cfg,
                                                    component_builder=component_builder,
                                                    **kwargs)
-    @staticmethod
-    def prepare_data(path: Optional[Text, Path]):
 
+    @staticmethod
+    def load_data(path: Optional[Text, Path]
+                  )->"np.ndarray":
         return read_smiles_csv(path)
 
     def compute(self,
                 gen_dir: List[Optional[Text, Mol]],
                 **kwargs):
-        similes = self.prepare_data(gen_dir)
+        similes = self.load_data(gen_dir)
         metric_results = {}
+        metric_contents = kwargs
         for i, component in enumerate(self.metics_pipeline):
             logger.info(f"Starting to train component {component.name}")
-            content = component.train(similes, **kwargs)
+            content, result = component.train(similes=similes, content = metric_contents)
+            if result:
+                metric_results.update(result)
             if content:
-                metric_results.update(content)
+                metric_contents.update(content)
+            
             logger.info("Finished training component.")
         return metric_results
 

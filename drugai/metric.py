@@ -40,11 +40,21 @@ if ("FCD/Test" in config.metric_method or
 
 def main():
     config = get_argparse().parse_args()
-    ## 修正的参数
-    f = open(config.config_dir, "r")
-    fix_args = yaml.full_load(f)
-    for k in fix_args:
-        config = override_defaults(config, fix_args[k])
+    config.no_cuda = False
+    config.seed = 1314
+    config.metric_save_dir = "./"
+    config.model_name = "rr"
+    config.gen_dir = "../results/RNNGenerate_results.csv"
+    config.local_rank=-1
+    config.metric_data_dir=None
+    config.unique_k=[1000,10000]
+    config.n_jobs=1
+    config.batch_size=512
+    # ## 修正的参数
+    # f = open(config.config_dir, "r")
+    # fix_args = yaml.full_load(f)
+    # for k in fix_args:
+    #     config = override_defaults(config, fix_args[k])
 
     ## 随机种子
     seed_everything(config.seed)
