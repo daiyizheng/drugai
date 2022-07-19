@@ -40,9 +40,9 @@ def predict(args: argparse.Namespace):
     interpreter.persist(args.out, results)
 
 
-def visualize(args: argparse.Namespace):
+def visualize(args: argparse.Namespace)->None:
     vs = Visualize()
-    vs.show(smiles=args.smiles,
+    vs.show(smiles1=args.smiles,
             save_file=args.save_file)
 
 
@@ -52,5 +52,5 @@ def metric(args: argparse.Namespace):
     content = met.compute(gen_dir=args.gen_dir,
                           n_jobs=args.num_workers,
                           device = "cpu" if args.no_cuda else "cuda")
-    # path = os.path.join(args.out, os.path.splitext(os.path.basename(__file__))[0]+"_metric.json")
+
     met.persist(path=args.out, content=content)

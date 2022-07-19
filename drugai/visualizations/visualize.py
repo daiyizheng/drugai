@@ -11,6 +11,8 @@ import random
 from typing import Optional, Text, List, Tuple, Any
 import logging
 
+from drugai.visualizations.atom_visualize import partial_charge_similarity_weights, logp_similarity_weights, \
+    fingerprint_similarity_weights
 from moses.script_utils import read_smiles_csv
 from rdkit import Chem
 
@@ -26,9 +28,19 @@ class Visualize(object):
     def show(self,
              smiles1: Text,
              smiles2: Text = None,
-             mode="single",
-             # "single_image", "multiple_image", "template_image", "partial_charge_similarity_weights", "logp_similarity_weights", "fingerprint_similarity_weights"
+             mode="single_image",
              **kwargs):
+        """
+        :param smiles1:
+        :param smiles2:
+        :param mode: default:"single_image"
+               other mode : "multiple_image", "template_image", "partial_charge_similarity_weights",
+                            "logp_similarity_weights", "fingerprint_similarity_weights"
+        :param kwargs:
+        :return:
+        """
+
+
         logger.info("mode is %s" % (mode))
 
         if mode == "single_image":
@@ -52,17 +64,32 @@ class Visualize(object):
             return template_image(mols=mol, template=template, **kwargs)
 
         elif mode == "partial_charge_similarity_weights":
-            pass
+            mol = self.covert_data(smiles=smiles1)
+            if isinstance(mol, list):
+                mol = random.sample(mol, 1)[0]
+            return partial_charge_similarity_weights(mol=mol)
+
         elif mode == "logp_similarity_weights":
-            pass
-        elif  mode == "fingerprint_similarity_weights":
-            pass
+            mol = self.covert_data(smiles=smiles1)
+            if isinstance(mol, list):
+                mol = random.sample(mol, 1)[0]
+            return logp_similarity_weights(mol=mol)
+
+        elif mode == "fingerprint_similarity_weights":
+            mol1 = self.covert_data(smiles=smiles1)
+            if isinstance(mol1, list):
+                mol1 = random.sample(mol1, 1)[0]
+            mol2 = self.covert_data(smiles=smiles2)
+            if isinstance(mol2, list):
+                mol2 = random.sample(mol2, 1)[0]
+            return fingerprint_similarity_weights(mol1=mol1, mol2=mol2)
+
         else:
             raise KeyError
 
     def covert_data(self,
                     smiles:Text
-                    ) -> None:
+                    ) -> Any:
         if self.is_smiles(smiles=smiles):
             mol = self.smiles_to_mol(smiles=smiles)
         elif self.is_smiles_path(smiles=smiles):

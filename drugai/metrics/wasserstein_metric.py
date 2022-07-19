@@ -6,7 +6,7 @@
 # @File    : logP_metric.py
 from __future__ import annotations, print_function
 
-import os
+import os, logging
 from typing import Optional, Dict, Text, Any, List, Tuple
 
 from drugai.utils.io import read_smiles_zip
@@ -17,9 +17,10 @@ from rdkit.Chem.rdchem import Mol
 
 from moses.metrics import WassersteinMetric as wm, remove_invalid
 from moses.metrics import logP, SA, QED, weight
-import pandas as pd
 
 from drugai.component import Component
+
+logger = logging.getLogger(__name__)
 
 
 class WassersteinMetric(Component):
@@ -32,22 +33,23 @@ class WassersteinMetric(Component):
                  cfg: Optional[Dict[Text, Any]] = None,
                  **kwargs: Any):
         super(WassersteinMetric, self).__init__(component_config=cfg, **kwargs)
-        self.attributes_funcs_map =  {"logP": logP, "SA": SA, "QED": QED, "weight": weight}
-        self.attributes_funcs = {k:self.attributes_funcs_map[k] for k in self.component_config["attributes"]}
+        self.attributes_funcs_map = {"logP": logP, "SA": SA, "QED": QED, "weight": weight}
+        self.attributes_funcs = {k: self.attributes_funcs_map[k] for k in self.component_config["attributes"]}
 
     def prepare_data(self,
-                     filename:Text,
-                     type_name:Text,
-                     content:Dict,
-                     **kwargs)->Dict:
+                     filename: Text,
+                     type_name: Text,
+                     content: Dict,
+                     **kwargs) -> Dict:
         if content.get(type_name, None) is None:
             if content.get(filename, None) is None:
-                if self.component_config[filename + "_dir"] is None:
+                if self.component_config[filename + "_dir"] is not None:
                     test_dir = self.component_config[filename + "_dir"]
                     test = read_smiles_csv(test_dir)
                 else:
                     test_dir = os.path.join(os.path.dirname(__file__), "resources", filename + ".csv.gz")
                     test = read_smiles_zip(test_dir)
+                logger.info("test path is %s" %(test_dir))
                 content[filename] = test
             else:
                 test = content[filename]
@@ -56,24 +58,24 @@ class WassersteinMetric(Component):
         return content
 
     def train(self,
-              similes: List[Text, Mol],
-              n_jobs =1,
-              device:Text="cpu",
-              content:Dict={},
+              smiles: List[Text, Mol],
+              n_jobs=1,
+              device: Text = "cpu",
+              content: Dict = {},
               **kwargs: Any
               ) -> Tuple[Dict, Dict]:
-        similes = remove_invalid(similes, canonize=True)  ## 移除无效的分子
+        similes = remove_invalid(smiles, canonize=True)  ## 移除无效的分子
         mols = mapper(n_jobs)(get_mol, similes)
         result = {}
-        kwargs_wm = {"n_jobs":n_jobs}
-        for name, func in self.attributes_funcs:
+        kwargs_wm = {"n_jobs": n_jobs}
+        for name, func in self.attributes_funcs.items():
+            logger.info("WassersteinMetric, function %s start" %(name))
             content = self.prepare_data(filename="test",
                                         content=content,
                                         type_name=name,
                                         **kwargs)
-            result[name] = wm(func,
-                              n_jobs=n_jobs,
-                              **kwargs_wm)(gen=mols,
-                                           pref=content[name])
+            result[name] = wm(func, **kwargs_wm)(gen=mols, pref=content[name])
+            logger.info(name+": %s" %(result[name]))
+            logger.info("WassersteinMetric, function %s end" % (name))
 
         return content, result

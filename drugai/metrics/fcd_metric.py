@@ -6,18 +6,18 @@
 # @File    : FCD_metric.py
 from __future__ import annotations, print_function
 
-import os
+import os, logging
 from typing import Optional, Dict, Text, Any, List, Tuple
 
 from fcd_torch import FCD
-from moses.utils import get_mol, mapper
-
 from moses.metrics import remove_invalid
-
-from moses.script_utils import read_smiles_csv, read_smiles_zip
+from moses.script_utils import read_smiles_csv
 from rdkit.Chem.rdchem import Mol
 
 from drugai.component import Component
+from drugai.utils.io import read_smiles_zip
+
+logger = logging.getLogger(__name__)
 
 
 class FCDMetric(Component):
@@ -38,9 +38,9 @@ class FCDMetric(Component):
                      filename:Text,
                      content:Dict,
                      **kwargs):
-        if content.get("FCD/"+filename, None) is  None:
+        if content.get("FCD/"+filename, None) is None:
             if content.get(filename, None) is None:
-                if self.component_config[filename+"_dir"] is None:
+                if self.component_config[filename+"_dir"] is not None:
                     test_dir = self.component_config[filename+"_dir"]
                     test = read_smiles_csv(test_dir)
                 else:
@@ -67,9 +67,11 @@ class FCDMetric(Component):
         if content.get("FCD/test", None) is None and self.component_config["use_test"]:
             content = self.prepare_data(filename="test",content=content,  **kwargs_fcd)
             result['FCD/Test'] = FCD(**kwargs_fcd)(gen=gen, pref=content['FCD/test'])
+            logger.info("FCD/test: %s" %(result['FCD/Test']))
 
         if content.get("FCD/test_scaffolds", None) is None and self.component_config["use_test_scaffolds"]:
             content = self.prepare_data(filename="test_scaffolds", content=content, **kwargs_fcd)
             result['FCD/test_scaffolds'] = FCD(**kwargs_fcd)(gen=gen, pref=content['FCD/test_scaffolds'])
+            logger.info("FCD/test_scaffolds: %s" % (result['FCD/test_scaffolds']))
 
         return content, result

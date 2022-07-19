@@ -6,17 +6,19 @@
 # @File    : Scaf_metric.py
 from __future__ import annotations, print_function
 
+import logging
 import os
 from typing import Optional, Dict, Text, Any, Tuple, List
 
 from rdkit.Chem.rdchem import Mol
-
 from moses.metrics import ScafMetric as Scaf, remove_invalid
 from moses.utils import mapper, get_mol
 from moses.script_utils import read_smiles_csv
 
 from drugai.utils.io import read_smiles_zip
 from drugai.component import Component
+
+logger = logging.getLogger(__name__)
 
 
 class ScafMetric(Component):
@@ -27,6 +29,7 @@ class ScafMetric(Component):
         "use_test": True,
         "use_test_scaffolds": True
     }
+
     def __init__(self,
                  cfg: Optional[Dict[Text, Any]] = None,
                  **kwargs: Any):
@@ -39,7 +42,7 @@ class ScafMetric(Component):
 
         if content.get("Scaf/" + filename, None) is None:
             if content.get(filename, None) is None:
-                if self.component_config[filename + "_dir"] is None:
+                if self.component_config[filename + "_dir"] is not None:
                     test_dir = self.component_config[filename + "_dir"]
                     test = read_smiles_csv(test_dir)
                 else:
@@ -51,7 +54,6 @@ class ScafMetric(Component):
             mols = mapper(n_jobs=kwargs.get("n_jobs", 1))(get_mol, test)
             content['Scaf/' + filename] = Scaf(**kwargs).precalc(mols=mols)
         return content
-
 
     def train(self,
               smiles: List[Text, Mol],
@@ -68,9 +70,11 @@ class ScafMetric(Component):
         if content.get("Scaf/test", None) is None and self.component_config["use_test"]:
             content = self.prepare_data(filename="test", content=content, **kwargs_scaf)
             result['Scaf/Test'] = Scaf(**kwargs_scaf)(gen=mols, pref=content['Scaf/test'])
+            logger.info("Scaf/Test: %s" % (result['Scaf/Test']))
 
         if content.get("Scaf/test_scaffolds", None) is None and self.component_config["use_test_scaffolds"]:
             content = self.prepare_data(filename="test_scaffolds", content=content, **kwargs_scaf)
             result['Scaf/test_scaffolds'] = Scaf(**kwargs_scaf)(gen=mols, pref=content['Scaf/test_scaffolds'])
+            logger.info("Scaf/test_scaffolds: %s" % (result['Scaf/test_scaffolds']))
 
         return content, result

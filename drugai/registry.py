@@ -10,8 +10,21 @@ import logging
 import traceback
 from typing import Dict, Text, Any, Optional, Type
 
-from drugai.metrics.valid_metic import ValidMetic
+## 生成模型
+
 from drugai.models.generate.rnn_gen import RNNGenerate
+
+## 评估器
+from drugai.metrics.unique_metric import UniqueMetic
+from drugai.metrics.valid_metic import ValidMetic
+from drugai.metrics.novelty_metric import NoveltyMetric
+from drugai.metrics.internal_diversity_metric import InternalDiversityMetric
+from drugai.metrics.fraction_passes_filters_metric import FractionPassesFiltersMetric
+from drugai.metrics.wasserstein_metric import WassersteinMetric
+from drugai.metrics.fcd_metric import FCDMetric
+from drugai.metrics.frag_metric import FragMetric
+from drugai.metrics.scaf_metric import ScafMetric
+from drugai.metrics.snn_metric import SNNMetric
 
 from drugai.utils.common import class_from_module_path
 
@@ -19,7 +32,16 @@ logger = logging.getLogger(__name__)
 
 component_classes = [
     RNNGenerate,
-    ValidMetic
+    ValidMetic,
+    UniqueMetic,
+    NoveltyMetric,
+    InternalDiversityMetric,
+    FractionPassesFiltersMetric,
+    WassersteinMetric,
+    FCDMetric,
+    FragMetric,
+    ScafMetric,
+    SNNMetric
 ]
 registered_components = {c.name: c for c in component_classes}
 

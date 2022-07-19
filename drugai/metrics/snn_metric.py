@@ -6,18 +6,20 @@
 # @File    : SNN_metric.py
 from __future__ import annotations, print_function
 
+import logging
 import os
 from typing import Optional, Dict, Text, Any, List, Tuple
 
-from drugai.utils.io import read_smiles_zip
-from moses.script_utils import read_smiles_csv
-
-from moses.utils import mapper, get_mol
 from rdkit.Chem.rdchem import Mol
+from moses.script_utils import read_smiles_csv
+from moses.utils import mapper, get_mol
 from moses.metrics import remove_invalid
 from moses.metrics import SNNMetric as SNN
 
 from drugai.component import Component
+from drugai.utils.io import read_smiles_zip
+
+logger = logging.getLogger(__name__)
 
 
 class SNNMetric(Component):
@@ -70,9 +72,11 @@ class SNNMetric(Component):
         if content.get("SNN/test", None) is None and self.component_config["use_test"]:
             content = self.prepare_data(filename="test", content=content, **kwargs_snn)
             result['SNN/Test'] = SNN(**kwargs_snn)(gen=mols, pref=content['SNN/test'])
+            logger.info("SNN/Test: %s" % (result["SNN/Test"]))
 
         if content.get("SNN/test_scaffolds", None) is None and self.component_config["use_test_scaffolds"]:
             content = self.prepare_data(filename="test_scaffolds", content=content,  **kwargs_snn)
             result['SNN/test_scaffolds'] = SNN(**kwargs_snn)(gen=mols, pref=content['SNN/test_scaffolds'])
+            logger.info("SNN/test_scaffolds: %s" % (result["SNN/test_scaffolds"]))
 
         return content, result

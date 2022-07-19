@@ -38,12 +38,12 @@ class Metric(object):
     def compute(self,
                 gen_dir: List[Optional[Text, Mol]],
                 **kwargs):
-        similes = self.load_data(gen_dir)
+        smiles = self.load_data(gen_dir)
         metric_results = {}
         metric_contents = kwargs
         for i, component in enumerate(self.metics_pipeline):
             logger.info(f"Starting to train component {component.name}")
-            content, result = component.train(similes=similes, content = metric_contents)
+            content, result = component.train(smiles=smiles, content = metric_contents, **kwargs)
             if result:
                 metric_results.update(result)
             if content:

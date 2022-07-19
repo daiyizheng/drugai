@@ -5,18 +5,19 @@
 # @Email   : 387942239@qq.com
 # @File    : Frag_metric.py
 from __future__ import annotations, print_function
-
-import os
 from typing import Optional, Dict, Text, Any, List, Tuple
+import logging
+import os
 
 from rdkit.Chem.rdchem import Mol
-
 from moses.metrics import FragMetric as Frag, remove_invalid
 from moses.utils import get_mol, mapper
-from drugai.utils.io import read_smiles_zip
 from moses.script_utils import read_smiles_csv
 
 from drugai.component import Component
+from drugai.utils.io import read_smiles_zip
+
+logger = logging.getLogger(__name__)
 
 
 class FragMetric(Component):
@@ -39,7 +40,7 @@ class FragMetric(Component):
 
         if content.get("Frag/" + filename, None) is None:
             if content.get(filename, None) is None:
-                if self.component_config[filename + "_dir"] is None:
+                if self.component_config[filename + "_dir"] is not None:
                     test_dir = self.component_config[filename + "_dir"]
                     test = read_smiles_csv(test_dir)
                 else:
@@ -62,14 +63,16 @@ class FragMetric(Component):
         result = {}
         gen = remove_invalid(smiles, canonize=True)
         mols = mapper(n_jobs=n_jobs)(get_mol, gen)
-        kwargs_frac = {'n_jobs': n_jobs, 'device': device, 'batch_size': self.component_config["batch_size"]}
+        kwargs_frag = {'n_jobs': n_jobs, 'device': device, 'batch_size': self.component_config["batch_size"]}
 
         if content.get("Frag/test", None) is None and self.component_config["use_test"]:
-            content = self.prepare_data(filename="test", content=content, **kwargs_frac)
-            result['Frac/Test'] = Frag(**kwargs_frac)(gen=mols, pref=content['Frac/test'])
+            content = self.prepare_data(filename="test", content=content, **kwargs_frag)
+            result['Frag/Test'] = Frag(**kwargs_frag)(gen=mols, pref=content['Frag/test'])
+            logger.info("Frag/Test: %s" % (result['Frag/Test']))
 
-        if content.get("Frac/test_scaffolds", None) is None and self.component_config["use_test_scaffolds"]:
-            content = self.prepare_data(filename="test_scaffolds", content=content, **kwargs_frac)
-            result['Frac/test_scaffolds'] = Frag(**kwargs_frac)(gen=mols, pref=content['Frac/test_scaffolds'])
+        if content.get("Frag/test_scaffolds", None) is None and self.component_config["use_test_scaffolds"]:
+            content = self.prepare_data(filename="test_scaffolds", content=content, **kwargs_frag)
+            result['Frag/test_scaffolds'] = Frag(**kwargs_frag)(gen=mols, pref=content['Frag/test_scaffolds'])
+            logger.info("Frag/test_scaffolds: %s" % (result['Frag/test_scaffolds']))
 
         return content, result

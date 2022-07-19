@@ -10,4 +10,7 @@ predict:
     n_sample: 10000
 
 metric:
-  - name: valid
+  - name: ScafMetric
+    use_test_scaffolds: true
+  - name: SNNMetric
+    use_test_scaffolds: true
