@@ -12,15 +12,15 @@ from functools import partial
 from typing import Text, Any, Dict, Optional, List
 import logging
 
-from moses.script_utils import read_smiles_csv
+import numpy as np
 from tqdm import tqdm
 import torch
 from torch import nn as nn
 from torch.nn.utils.rnn import pack_padded_sequence, pad_packed_sequence
 import torch.optim as optim
 import torch.nn.functional as F
-import numpy as np
 from torch.utils.data import DataLoader
+from moses.script_utils import read_smiles_csv
 
 from drugai.models.dataset import default_collate_fn
 from drugai.models.generate.gen_vocab import CharRNNVocab
@@ -134,17 +134,18 @@ class RNNGenerate(GenerateComponent):
         self.model.to(self.device)
         train_dataloader = self.get_train_dataloader(train_dataset)
 
-        self.optimizer, self.scheduler = self.config_optimizer()
+        self.optimizer, scheduler = self.config_optimizer()
         self.criterion = self.config_criterion()
         self.compute_metric = None
         self.model.zero_grad()
 
         for epoch in range(self.component_config["epochs"]):
-            self.scheduler.step()  # Update learning rate schedule
+            scheduler.step()  # Update learning rate schedule
             self.logs = {"loss": 0.0, "eval_loss": 0.0}
             self.epoch_data = tqdm(train_dataloader, desc='Training (epoch #{})'.format(epoch))
             self.model.train()
             self.train_epoch()
+            self.logs["learning_rate"] = scheduler.get_lr()[0]
             if eval_dir is not None:
                 self.evaluate(eval_dir)
             for key, value in self.logs.items():
@@ -153,7 +154,6 @@ class RNNGenerate(GenerateComponent):
     def train_epoch(self, *args, **kwargs):
         for step, batch_data in enumerate(self.epoch_data):
             self.train_step(batch_data, step)
-        self.logs["learning_rate"] = self.scheduler.get_lr()[0]
 
     def train_step(self, batch_data, step):
         input_ids, target, lengths = batch_data
@@ -218,6 +218,7 @@ class RNNGenerate(GenerateComponent):
             for key in result.keys():
                 self.logs["eval_" + key] = result[key]
 
+    @torch.no_grad()
     def evaluate_step(self, batch_data, step, **kwargs):
         input_ids, target, lengths = batch_data
         batch = {

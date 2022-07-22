@@ -26,6 +26,13 @@ def default_collate_fn(vocab, data):
     return batch_source, batch_target, batch_lengths
 
 
+def single_collate_fn(vocab, data):
+    data.sort(key=len, reverse=True)
+    batch_token_ids = [vocab.string_to_ids(s) for s in data]
+    batch_input_ids = [torch.tensor(b, dtype=torch.long) for b in batch_token_ids]
+    return batch_input_ids
+
+
 class DataSet(abc.ABC):
     def __init__(self,
                  batch_size: int,
