@@ -24,9 +24,9 @@ class InternalDiversityMetric(Component):
     }
 
     def __init__(self,
-                 cfg: Optional[Dict[Text, Any]] = None,
+                 component_config: Optional[Dict[Text, Any]] = None,
                  **kwargs: Any):
-        super(InternalDiversityMetric, self).__init__(component_config=cfg, **kwargs)
+        super(InternalDiversityMetric, self).__init__(component_config=component_config, **kwargs)
 
     def train(self,
               smiles: List[Text, Mol],

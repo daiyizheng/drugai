@@ -11,8 +11,8 @@ import traceback
 from typing import Dict, Text, Any, Optional, Type
 
 ## 生成模型
-
 from drugai.models.generate.rnn_gen import RNNGenerate
+from drugai.models.generate.vae_gen import VAEGenerate
 
 ## 评估器
 from drugai.metrics.unique_metric import UniqueMetic
@@ -26,12 +26,15 @@ from drugai.metrics.frag_metric import FragMetric
 from drugai.metrics.scaf_metric import ScafMetric
 from drugai.metrics.snn_metric import SNNMetric
 
+
 from drugai.utils.common import class_from_module_path
 
 logger = logging.getLogger(__name__)
 
 component_classes = [
     RNNGenerate,
+    VAEGenerate,
+
     ValidMetic,
     UniqueMetic,
     NoveltyMetric,
@@ -99,7 +102,7 @@ def create_component_by_config(component_config: Dict[Text, Any],
                                ) -> "Component":
     component_name = component_config.get("class", component_config["name"])
     component_class = get_component_class(component_name)
-    return component_class.create(component_config, **kwargs)
+    return component_class.create(component_config=component_config, **kwargs)
 
 # if __name__ == '__main__':
 #     config = {'name': 'RNNGenerate', 'batch_size': 512}

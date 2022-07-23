@@ -32,9 +32,9 @@ class SNNMetric(Component):
     }
 
     def __init__(self,
-                 cfg: Optional[Dict[Text, Any]] = None,
+                 component_config: Optional[Dict[Text, Any]] = None,
                  **kwargs: Any):
-        super(SNNMetric, self).__init__(component_config=cfg, **kwargs)
+        super(SNNMetric, self).__init__(component_config=component_config, **kwargs)
 
     def prepare_data(self,
                      filename:Text,

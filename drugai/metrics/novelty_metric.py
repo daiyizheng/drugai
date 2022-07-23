@@ -29,9 +29,9 @@ class NoveltyMetric(Component):
     }
 
     def __init__(self,
-                 cfg: Optional[Dict[Text, Any]] = None,
+                 component_config: Optional[Dict[Text, Any]] = None,
                  **kwargs: Any):
-        super(NoveltyMetric, self).__init__(component_config=cfg, **kwargs)
+        super(NoveltyMetric, self).__init__(component_config=component_config, **kwargs)
 
     def prepare_data(self,
                      filename: Text,

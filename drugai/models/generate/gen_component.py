@@ -6,6 +6,7 @@
 # @File    : generate_component.py
 from __future__ import annotations, print_function
 
+import os
 from typing import Optional, Dict, Text, Any
 import logging
 
@@ -29,7 +30,8 @@ class GenerateComponent(Component):
                  fp16: bool = False,
                  fp16_opt_level: Text = "01",  # '00', '01', '02', '03'
                  **kwargs:Any):
-        super(GenerateComponent, self).__init__(component_config, **kwargs)
+        super(GenerateComponent, self).__init__(component_config=component_config,
+                                                **kwargs)
         ##  device
         if local_rank == -1 or no_cuda:
             self.device = torch.device("cuda" if torch.cuda.is_available() and not no_cuda else "cpu")
@@ -46,38 +48,38 @@ class GenerateComponent(Component):
         self.fp16 = fp16
         self.fp16_opt_level = fp16_opt_level
 
-    def config_optimizer(self, *args, **kwargs):
+    def config_optimizer(self, *args, **kwargs) -> Any:
         raise NotImplemented
 
-    def config_criterion(self, *args, **kwargs):
+    def config_criterion(self, *args, **kwargs) -> Any:
         raise NotImplemented
 
-    def train(self, *args:Any, **kwargs:Any):
+    def train(self, *args:Any, **kwargs:Any) -> Any:
         raise NotImplemented
 
-    def train_epoch(self, *args, **kwargs):
+    def train_epoch(self, *args, **kwargs) -> Any:
         raise NotImplemented
 
-    def train_step(self, *args, **kwargs):
-        raise NotImplemented
-
-    @torch.no_grad()
-    def evaluate(self, *args, **kwargs):
+    def train_step(self, *args, **kwargs) -> Any:
         raise NotImplemented
 
     @torch.no_grad()
-    def evaluate_step(self, *args, **kwargs):
+    def evaluate(self, *args, **kwargs) -> Any:
         raise NotImplemented
 
     @torch.no_grad()
-    def evaluate_epoch(self, *args, **kwargs):
+    def evaluate_step(self, *args, **kwargs) -> Any:
         raise NotImplemented
 
     @torch.no_grad()
-    def predict_epoch(self, *args, **kwargs):
+    def evaluate_epoch(self, *args, **kwargs) -> Any:
+        raise NotImplemented
+
+    @torch.no_grad()
+    def predict_epoch(self, *args, **kwargs) -> Any:
         raise  NotImplemented
 
-    def predict(self, *args, **kwargs):
+    def predict(self, *args, **kwargs) -> Any:
         raise  NotImplemented
 
     def get_train_dataloader(self, *args, **kwargs):
@@ -98,3 +100,18 @@ class GenerateComponent(Component):
 
     def __call__(self, *args, **kwargs):
         return self.forward(*args, **kwargs)
+
+    def persist(self, model_dir: Text
+                ) -> Optional[Dict[Text, Any]]:
+        model_to_save = self.model.module if hasattr(self.model, 'module') else self.model
+        ## 保存模型
+        torch.save(model_to_save.state_dict(), os.path.join(model_dir, self.name + "_model.pt"))
+        ## 保存字典
+        torch.save(self.vocab, os.path.join(model_dir, self.name + "_vocab.pt"))
+        ## 保存参数
+        torch.save(self.component_config, os.path.join(model_dir, self.name + "_component_config.pt"))
+        return {"vocab_file": os.path.join(model_dir, self.name + "_vocab.pt"),
+                "model_file": os.path.join(model_dir, self.name + "_model.pt"),
+                "component_config": os.path.join(model_dir, self.name + "_component_config.pt")}
+
+

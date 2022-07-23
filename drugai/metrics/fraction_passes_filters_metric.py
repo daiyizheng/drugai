@@ -20,9 +20,9 @@ logger = logging.getLogger(__name__)
 
 class FractionPassesFiltersMetric(Component):
     def __init__(self,
-                 cfg: Optional[Dict[Text, Any]] = None,
+                 component_config: Optional[Dict[Text, Any]] = None,
                  **kwargs: Any):
-        super(FractionPassesFiltersMetric, self).__init__(component_config=cfg, **kwargs)
+        super(FractionPassesFiltersMetric, self).__init__(component_config=component_config, **kwargs)
 
     def train(self,
               smiles: List[Text, Mol],

@@ -17,7 +17,8 @@ from drugai.utils.io import create_directory
 
 
 class Trainer(object):
-    def __init__(self, cfg: Dict[Text, Any],
+    def __init__(self,
+                 cfg: Dict[Text, Any],
                  **kwargs):
         self.config = cfg
         component_builder = ComponentBuilder()

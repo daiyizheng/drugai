@@ -30,9 +30,9 @@ class WassersteinMetric(Component):
     }
 
     def __init__(self,
-                 cfg: Optional[Dict[Text, Any]] = None,
+                 component_config: Optional[Dict[Text, Any]] = None,
                  **kwargs: Any):
-        super(WassersteinMetric, self).__init__(component_config=cfg, **kwargs)
+        super(WassersteinMetric, self).__init__(component_config=component_config, **kwargs)
         self.attributes_funcs_map = {"logP": logP, "SA": SA, "QED": QED, "weight": weight}
         self.attributes_funcs = {k: self.attributes_funcs_map[k] for k in self.component_config["attributes"]}
 

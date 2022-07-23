@@ -19,6 +19,7 @@ logger = logging.getLogger(__name__)
 
 def train(args: argparse.Namespace):
     config = read_config_yaml(args.config)
+    print("no_cuda", args.no_cuda)
     trainer = Trainer(config,
                       tensorboardx_dir=args.tensorboardx_dir,
                       no_cuda=args.no_cuda,

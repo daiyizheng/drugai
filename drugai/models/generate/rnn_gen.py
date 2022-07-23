@@ -91,7 +91,7 @@ class RNNGenerate(GenerateComponent):
                  model=None,
                  **kwargs
                  ):
-        super(RNNGenerate, self).__init__(component_config, **kwargs)
+        super(RNNGenerate, self).__init__(component_config=component_config, **kwargs)
         ## vocab
         self.vocab = vocab
         self.model = model
@@ -179,8 +179,8 @@ class RNNGenerate(GenerateComponent):
             loss.backward()
         self.optimizer.step()
 
-        self.logs["loss"] += loss.item()
-        self.epoch_data.set_postfix({"loss": self.logs["loss"] / (step + 1), **{"step": step + 1}})
+        self.logs["loss"] = (self.logs["loss"] + loss.item())/ (step + 1)
+        self.epoch_data.set_postfix({"loss": self.logs["loss"], **{"step": step + 1}})
         self.global_step = 1
 
         if (step + 1) % self.component_config["gradient_accumulation_steps"] == 0:
@@ -228,8 +228,8 @@ class RNNGenerate(GenerateComponent):
         target = target.to(self.device)
         logits, _ = self(**batch)
         loss = self.criterion(logits.view(-1, logits.shape[-1]), target.view(-1))
-        self.logs["eval_loss"] += loss.item()
-        self.eval_data.set_postfix({**{"eval_loss": self.logs["eval_loss"] / (step + 1)}, **{"eval_step": step + 1}})
+        self.logs["eval_loss"] = (self.logs["eval_loss"]+loss.item())/ (step + 1)
+        self.eval_data.set_postfix({**{"eval_loss": self.logs["eval_loss"]}, **{"eval_step": step + 1}})
         return logits
 
     def get_train_dataloader(self, dataset, **kwargs):
@@ -312,19 +312,6 @@ class RNNGenerate(GenerateComponent):
                 n_sample -= len(current_sample)
                 T.update(len(current_sample))
         return {"SMILES": samples}
-
-    def persist(self, model_dir: Text
-                ) -> Optional[Dict[Text, Any]]:
-        model_to_save = self.model.module if hasattr(self.model, 'module') else self.model
-        ## 保存模型
-        torch.save(model_to_save.state_dict(), os.path.join(model_dir, self.name + "_model.pt"))
-        ## 保存字典
-        torch.save(self.vocab, os.path.join(model_dir, self.name + "_vocab.pt"))
-        ## 保存参数
-        torch.save(self.component_config, os.path.join(model_dir, self.name + "_component_config.pt"))
-        return {"vocab_file": os.path.join(model_dir, self.name+"_vocab.pt"),
-                "model_file": os.path.join(model_dir, self.name+"_model.pt"),
-                "component_config": os.path.join(model_dir, self.name+"_component_config.pt")}
 
     @classmethod
     def load(cls,

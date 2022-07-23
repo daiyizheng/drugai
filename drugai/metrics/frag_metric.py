@@ -29,9 +29,9 @@ class FragMetric(Component):
         "use_test_scaffolds": True
     }
     def __init__(self,
-                 cfg: Optional[Dict[Text, Any]] = None,
+                 component_config: Optional[Dict[Text, Any]] = None,
                  **kwargs: Any):
-        super(FragMetric, self).__init__(component_config=cfg, **kwargs)
+        super(FragMetric, self).__init__(component_config=component_config, **kwargs)
 
     def prepare_data(self,
                      filename: Text,

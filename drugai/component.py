@@ -53,7 +53,7 @@ class Component(metaclass=ComponentMetaclass):
                component_config: Dict[Text, Any],
                **kwargs:Any
                ) -> "Component":
-        return cls(component_config, **kwargs)
+        return cls(component_config=component_config, **kwargs)
 
     @classmethod
     def load(cls,
