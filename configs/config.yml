@@ -1,16 +1,15 @@
 version: "1.0"
 
 train:
-  - name: RNNGenerate
+  - name: VAEGenerate
     batch_size: 512
     epochs: 1
 
 predict:
-  - name: RNNGenerate
+  - name: VAEGenerate
     n_sample: 10000
 
 metric:
-  - name: ScafMetric
-    use_test_scaffolds: true
-  - name: SNNMetric
-    use_test_scaffolds: true
+  - name: ValidMetic
+  - name: UniqueMetic
+  - name: NoveltyMetric

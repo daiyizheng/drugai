@@ -17,28 +17,27 @@ class TrainingDataImporter(ABC):
     def __init__(
             self,
             config_file: Optional[Text] = None,
-            training_data_paths: Optional[Union[List[Text], Text]] = None,
+            train_data_paths: Optional[Union[List[Text], Text]] = None,
+            eval_data_paths: Optional[Union[List[Text], Text]] = None,
+            test_data_paths: Optional[Union[List[Text], Text]] = None,
             **kwargs: Any,
     ) -> None:
-        """Initialise the importer."""
-        ...
+        self.config_file = config_file
+        self.train_data_paths = train_data_paths
+        self.eval_data_paths = eval_data_paths
+        self.test_data_paths = test_data_paths
 
     @abstractmethod
     def get_config(self) -> Dict:
         """Retrieves the configuration that should be used for the training.
-
         Returns:
             The configuration as dictionary.
         """
         ...
 
     @abstractmethod
-    def get_data(self, language: Optional[Text] = "en") -> TrainingData:
+    def get_data(self, **kwargs) -> TrainingData:
         """Retrieves the training data that should be used for training.
-
-        Args:
-            language: Can be used to only load training data for a certain language.
-
         Returns:
             Loaded data `TrainingData`.
         """
