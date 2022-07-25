@@ -12,11 +12,13 @@ from typing import Text, Optional, Dict, Any
 import torch
 
 from drugai.models.component_builder import ComponentBuilder
+from drugai.shared.importers.training_data_importer import TrainingDataImporter
 from drugai.utils.common import override_defaults
 from drugai.utils.io import create_directory, write_dict_to_csv
 
 
-def create_interpreter(cfg: Dict[Text, Any], model_dir: Text, **kwargs):
+def create_interpreter(cfg: Dict[Text, Any],
+                       model_dir: Text, **kwargs):
     return Interpreter.load(cfg, model_dir, **kwargs)
 
 
@@ -26,8 +28,10 @@ class Interpreter(object):
                  **kwargs):
         self.pipeline = pipeline
 
-    def inference(self, *args, **kwargs):
-        return self.pipeline.process(*args, **kwargs)
+    def inference(self,
+                  file_importer:TrainingDataImporter,
+                  **kwargs):
+        return self.pipeline.process(file_importer=file_importer, **kwargs)
 
     def persist(self, path:Text, content:Dict):
         path = os.path.abspath(path)

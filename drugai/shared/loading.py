@@ -14,19 +14,19 @@ from moses.script_utils import read_smiles_csv
 
 
 def training_data_from_paths(path: Text,
-                             data_type: Text
+                             mode: Text
                              ) -> Any:
     if path == None:
         return []
     if not os.path.exists(path):
         raise ValueError(f"File '{path}' does not exist.")
-    return load_data(path=path, data_type=data_type)
+    return load_data(path=path, mode=mode)
 
 
 def load_data(path: Text,
-              data_type: Text
+              mode: Text
               ) -> np.ndarray:
-    if data_type == "gen":
+    if mode == "gen":
         return read_smiles_csv(path)
     else:
         raise KeyError

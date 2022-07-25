@@ -11,21 +11,30 @@ from typing import Text, Any
 
 from torch.utils.data import DataLoader
 
+from drugai.models.generate.gen_vocab import CharRNNVocab
+
 logger = logging.getLogger(__name__)
 
 
 class TrainingData:
+    mode_name_map = {
+        "RNNGenerate": CharRNNVocab,
+        "VAEGenerate": CharRNNVocab
+    }
+
     def __init__(self,
                  train_data,
-                 eval_data=None,
-                 test_data=None):
+                 eval_data = None,
+                 test_data = None,
+                 num_workers: int = 0,
+                 **kwargs):
         self.train_data = train_data
         self.eval_data = eval_data
         self.test_data = test_data
+        self.num_workers = num_workers
 
     def dataloader(self,
                    batch_size: int,
-                   num_workers: int,
                    collate_fn: Any,
                    shuffle: bool = True,
                    mode: Text = "train"):
@@ -41,5 +50,12 @@ class TrainingData:
         return DataLoader(dataset,
                           batch_size=batch_size,
                           shuffle=shuffle,
-                          num_workers=num_workers,
+                          num_workers=self.num_workers,
                           collate_fn=collate_fn)
+
+    def build_vocab(self,
+                    model_name
+                    ) -> "Vocab":
+        if model_name not in self.mode_name_map:
+            raise KeyError
+        return self.mode_name_map[model_name].from_data(self.train_data)

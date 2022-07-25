@@ -36,14 +36,16 @@ class DrugImporter(TrainingDataImporter):
         return drugai.utils.io.read_config_yaml(self.config_file)
 
     def get_data(self,
-                 data_type:Text
+                 mode:Text,
+                 **kwargs
                  ) -> "TrainingData":
-        train_data = training_data_from_paths(self.train_data_paths, data_type=data_type)
-        eval_data = training_data_from_paths(self.eval_data_paths, data_type=data_type)
-        test_data = training_data_from_paths(self.test_data_paths, data_type=data_type)
+        train_data = training_data_from_paths(self.train_data_paths, mode=mode)
+        eval_data = training_data_from_paths(self.eval_data_paths, mode=mode)
+        test_data = training_data_from_paths(self.test_data_paths, mode=mode)
         return TrainingData(train_data=train_data,
                             eval_data=eval_data,
-                            test_data=test_data)
+                            test_data=test_data,
+                            **kwargs)
 
 # if __name__ == '__main__':
 #     a = DrugImporter(config_file="../../../configs/config.yml",

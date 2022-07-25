@@ -6,7 +6,6 @@
 # @File    : rnn_generate.py
 from __future__ import annotations, print_function
 
-import argparse
 import os
 from functools import partial
 from typing import Text, Any, Dict, Optional, List
@@ -20,10 +19,9 @@ from torch.nn.utils.rnn import pack_padded_sequence, pad_packed_sequence
 import torch.optim as optim
 import torch.nn.functional as F
 from torch.utils.data import DataLoader
-from moses.script_utils import read_smiles_csv
 
+from drugai.shared.importers.training_data_importer import TrainingDataImporter
 from drugai.models.dataset import default_collate_fn
-from drugai.models.generate.gen_vocab import CharRNNVocab
 from drugai.models.vocab import Vocab
 from drugai.models.generate.gen_component import GenerateComponent
 
@@ -109,21 +107,12 @@ class RNNGenerate(GenerateComponent):
     def config_criterion(self, *args, **kwargs):
         return nn.CrossEntropyLoss(ignore_index=self.component_config["pad_token_ids"])
 
-    def load_data(self, file_dir: Text) -> np.ndarray:
-        dataset = read_smiles_csv(file_dir)
-        return dataset
-
-    def build_vocab(self, dataset: np.ndarray) -> Vocab:
-        return CharRNNVocab.from_data(dataset)
-
     def train(self,
-              train_dir: Text,
-              eval_dir: Text = None,
+              file_importer: TrainingDataImporter,
               **kwargs):
-        ## 读取数据
-        train_dataset = self.load_data(train_dir)
-
-        self.vocab = self.build_vocab(train_dataset)
+        training_data = file_importer.get_data(mode="gen",
+                                               num_workers = kwargs.get("num_workers", None) if kwargs.get("num_workers", None) else 0)
+        self.vocab = training_data.build_vocab(model_name=self.name)
         self.component_config["vocab_size"] = len(self.vocab)
         self.component_config["pad_token_ids"] = self.vocab.pad_token_ids
         self.model = RNN(vocab_size=self.component_config["vocab_size"],
@@ -132,7 +121,15 @@ class RNNGenerate(GenerateComponent):
                          hidden_size=self.component_config["hidden_size"],
                          pad_token_ids=self.component_config["pad_token_ids"])
         self.model.to(self.device)
-        train_dataloader = self.get_train_dataloader(train_dataset)
+        train_dataloader = training_data.dataloader(batch_size=self.component_config["batch_size"],
+                                                    collate_fn=partial(default_collate_fn, self.vocab),
+                                                    shuffle=True,
+                                                    mode= "train")
+
+        eval_dataloader = training_data.dataloader(batch_size=self.component_config["batch_size"],
+                                                    collate_fn=partial(default_collate_fn, self.vocab),
+                                                    shuffle=False,
+                                                    mode= "eval")
 
         self.optimizer, scheduler = self.config_optimizer()
         self.criterion = self.config_criterion()
@@ -146,8 +143,8 @@ class RNNGenerate(GenerateComponent):
             self.model.train()
             self.train_epoch()
             self.logs["learning_rate"] = scheduler.get_lr()[0]
-            if eval_dir is not None:
-                self.evaluate(eval_dir)
+            if training_data.eval_data is not None:
+                self.evaluate(eval_dataloader=eval_dataloader)
             for key, value in self.logs.items():
                 self.tb_writer.add_scalar(key, value, epoch)
 
@@ -190,10 +187,7 @@ class RNNGenerate(GenerateComponent):
                 torch.nn.utils.clip_grad_norm(self.model.parameters(), self.component_config["max_grad_norm"])
         return logits
 
-    def evaluate(self, eval_dir: Text):
-        eval_dataset = self.load_data(eval_dir)
-        eval_dataloader = self.get_evaluate_dataloader(eval_dataset)
-
+    def evaluate(self, eval_dataloader):
         self.eval_data = tqdm(eval_dataloader, desc='Evaluation')
         self.evaluate_epoch()
 
@@ -231,18 +225,6 @@ class RNNGenerate(GenerateComponent):
         self.logs["eval_loss"] = (self.logs["eval_loss"]+loss.item())/ (step + 1)
         self.eval_data.set_postfix({**{"eval_loss": self.logs["eval_loss"]}, **{"eval_step": step + 1}})
         return logits
-
-    def get_train_dataloader(self, dataset, **kwargs):
-        return DataLoader(dataset,
-                          batch_size=self.component_config["batch_size"],
-                          shuffle=True,
-                          collate_fn=partial(default_collate_fn, self.vocab))
-
-    def get_evaluate_dataloader(self, dataset, **kwargs):
-        return DataLoader(dataset,
-                          batch_size=self.component_config["batch_size"],
-                          shuffle=False,
-                          collate_fn=partial(default_collate_fn, self.vocab))
 
     def get_predict_dataloader(self, *args, **kwargs):
         dataset = [torch.tensor([self.vocab.bos_token_ids],
@@ -297,7 +279,9 @@ class RNNGenerate(GenerateComponent):
         new_smiles_list = [new_smiles_list[i][:l] for i, l in enumerate(len_smiles_list)]
         return [self.vocab.ids_to_string(t) for t in new_smiles_list]
 
-    def process(self, *args, **kwargs) -> Dict:
+    def process(self,
+                *args,
+                **kwargs) -> Dict:
         n_sample = self.component_config["n_sample"]
         batch_size = self.component_config["batch_size"]
         max_length = self.component_config["max_length"]

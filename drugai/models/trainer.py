@@ -13,16 +13,19 @@ from typing import Text, Optional, Dict, Any
 
 from drugai.models.component_builder import ComponentBuilder
 from drugai.models.interpreter import Interpreter
+from drugai.shared.importers.training_data_importer import TrainingDataImporter
 from drugai.utils.io import create_directory
 
 
 class Trainer(object):
     def __init__(self,
-                 cfg: Dict[Text, Any],
+                 file_importer: TrainingDataImporter,
                  **kwargs):
-        self.config = cfg
+        self.file_importer = file_importer
         component_builder = ComponentBuilder()
-        self.pipeline = self._build_pipeline(cfg, component_builder, **kwargs)
+        self.pipeline = self._build_pipeline(file_importer.get_config(),
+                                             component_builder,
+                                             **kwargs)
 
     def persist(
             self,
@@ -47,10 +50,8 @@ class Trainer(object):
         return pipeline
 
     def train(self,
-              train_dir:Text,
-              eval_dir:Text,
               **kwargs
               )->"Interpreter":
-        self.pipeline.train(train_dir=train_dir, eval_dir=eval_dir, **kwargs)
+        self.pipeline.train(file_importer=self.file_importer, **kwargs)
 
         return Interpreter(self.pipeline)

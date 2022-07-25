@@ -19,6 +19,8 @@ import torch.optim as optim
 import torch.nn.functional as F
 import torch.nn as nn
 from torch.utils.data import DataLoader
+
+from drugai.shared.importers.training_data_importer import TrainingDataImporter
 from moses.script_utils import read_smiles_csv
 
 from drugai.models.dataset import single_collate_fn
@@ -271,13 +273,12 @@ class VAEGenerate(GenerateComponent):
         return CharRNNVocab.from_data(dataset)
 
     def train(self,
-              train_dir: Text,
-              eval_dir: Text = None,
+              file_importer: TrainingDataImporter,
               **kwargs):
-        ## 加载数据
-        train_dataset = self.load_data(file_dir=train_dir)
-        ## 加载字典
-        self.vocab = self.build_vocab(train_dataset)
+        training_data = file_importer.get_data(mode="gen",
+                                               num_workers=kwargs.get("num_workers", None) if kwargs.get("num_workers", None) else 0)
+        self.vocab = training_data.build_vocab(model_name=self.name)
+
         self.component_config["vocab_size"] = len(self.vocab)
         self.component_config["pad_token_ids"] = self.vocab.pad_token_ids
         self.model = VAE(vocab_size=self.component_config["vocab_size"],
@@ -296,7 +297,15 @@ class VAEGenerate(GenerateComponent):
                          decoder_rnn_type=self.component_config["decoder_rnn_type"],
                          freeze_embeddings=self.component_config["freeze_embeddings"])
         self.model.to(self.device)
-        train_dataloader = self.get_train_dataloader(train_dataset)
+        train_dataloader = training_data.dataloader(batch_size=self.component_config["batch_size"],
+                                                    collate_fn=partial(single_collate_fn, self.vocab),
+                                                    shuffle=True,
+                                                    mode="train")
+
+        eval_dataloader = training_data.dataloader(batch_size=self.component_config["batch_size"],
+                                                   collate_fn=partial(single_collate_fn, self.vocab),
+                                                   shuffle=False,
+                                                   mode="eval")
 
         self.optimizer, [kl_annealer, lr_annealer] = self.config_optimizer()
         self.compute_metric = None
@@ -314,8 +323,8 @@ class VAEGenerate(GenerateComponent):
             self.model.train()
             self.train_epoch(kl_weight=kl_weight)
 
-            if eval_dir is not None:
-                self.evaluate(eval_dir=eval_dir, kl_weight=kl_weight)
+            if training_data.eval_data is not None:
+                self.evaluate(eval_dataloader=eval_dataloader, kl_weight=kl_weight)
             for key, value in self.logs.items():
                 self.tb_writer.add_scalar(key, value, epoch)
 
@@ -379,12 +388,9 @@ class VAEGenerate(GenerateComponent):
         return loss_value
 
     def evaluate(self,
-                 eval_dir: Text,
+                 eval_dataloader,
                  kl_weight,
                  **kwargs):
-        eval_dataset = self.load_data(eval_dir)
-        eval_dataloader = self.get_evaluate_dataloader(eval_dataset)
-
         self.eval_data = tqdm(eval_dataloader, desc='Evaluation')
         self.evaluate_epoch(kl_weight=kl_weight)
 
@@ -428,22 +434,6 @@ class VAEGenerate(GenerateComponent):
                                     "lr": lr,
                                     **{"step": step + 1}})
         return loss_value
-
-    def get_train_dataloader(self,
-                             dataset,
-                             **kwargs):
-        return DataLoader(dataset,
-                          batch_size=self.component_config["batch_size"],
-                          shuffle=True,
-                          collate_fn=partial(single_collate_fn, self.vocab))
-
-    def get_evaluate_dataloader(self,
-                                dataset,
-                                **kwargs):
-        return DataLoader(dataset,
-                          batch_size=self.component_config["batch_size"],
-                          shuffle=False,
-                          collate_fn=partial(single_collate_fn, self.vocab))
 
     def get_predict_dataloader(self,
                                *args,

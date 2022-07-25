@@ -82,15 +82,6 @@ class GenerateComponent(Component):
     def predict(self, *args, **kwargs) -> Any:
         raise  NotImplemented
 
-    def get_train_dataloader(self, *args, **kwargs):
-        raise NotImplemented
-
-    def get_evaluate_dataloader(self, *args, **kwargs):
-        raise NotImplemented
-
-    def get_predict_dataloader(self, *args, **kwargs):
-        raise NotImplemented
-
     def sample(self, n_sample, *args, **kwargs):
         raise NotImplemented
 
