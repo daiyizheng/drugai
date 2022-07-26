@@ -18,16 +18,12 @@ import torch
 import torch.optim as optim
 import torch.nn.functional as F
 import torch.nn as nn
-from torch.utils.data import DataLoader
 
 from drugai.shared.importers.training_data_importer import TrainingDataImporter
-from moses.script_utils import read_smiles_csv
-
 from drugai.models.dataset import single_collate_fn
 from drugai.models.losses.cosine_annealing_lr_with_restart import CosineAnnealingLRWithRestart
 from drugai.models.losses.kl_annealer import KLAnnealer
 from drugai.models.generate.gen_component import GenerateComponent
-from drugai.models.generate.gen_vocab import CharRNNVocab
 from drugai.models.vocab import Vocab
 
 try:
@@ -213,7 +209,6 @@ class VAEGenerate(GenerateComponent):
         "freeze_embeddings": False,
 
         "gradient_accumulation_steps": 1,
-        "max_grad_norm": 1.0,
         "clip_grad": 50,
         "kl_start": 0,
         "kl_w_start": 0.0,
@@ -232,7 +227,8 @@ class VAEGenerate(GenerateComponent):
                  model=None,
                  **kwargs
                  ):
-        super(VAEGenerate, self).__init__(component_config=component_config, **kwargs)
+        super(VAEGenerate, self).__init__(component_config=component_config,
+                                          **kwargs)
         ## vocab
         self.vocab = vocab
         self.model = model
@@ -261,22 +257,12 @@ class VAEGenerate(GenerateComponent):
                          **kwargs):
         pass
 
-    def load_data(self,
-                  file_dir: Text
-                  ) -> np.ndarray:
-        dataset = read_smiles_csv(file_dir)
-        return dataset
-
-    def build_vocab(self,
-                    dataset: np.ndarray
-                    ) -> Vocab:
-        return CharRNNVocab.from_data(dataset)
-
     def train(self,
               file_importer: TrainingDataImporter,
               **kwargs):
         training_data = file_importer.get_data(mode="gen",
-                                               num_workers=kwargs.get("num_workers", None) if kwargs.get("num_workers", None) else 0)
+                                               num_workers=kwargs.get("num_workers", None) if kwargs.get("num_workers",
+                                                                                                         None) else 0)
         self.vocab = training_data.build_vocab(model_name=self.name)
 
         self.component_config["vocab_size"] = len(self.vocab)
@@ -311,8 +297,9 @@ class VAEGenerate(GenerateComponent):
         self.compute_metric = None
         self.model.zero_grad()
 
-        epochs = self.component_config["epochs"] if self.component_config["epochs"] else sum(self.component_config["lr_n_period"] * (self.component_config["lr_n_mult"] ** i)
-                     for i in range(self.component_config["lr_n_restarts"]))
+        epochs = self.component_config["epochs"] if self.component_config["epochs"] else sum(
+            self.component_config["lr_n_period"] * (self.component_config["lr_n_mult"] ** i)
+            for i in range(self.component_config["lr_n_restarts"]))
         logger.info("epochs:{}".format(epochs))
 
         for epoch in range(epochs):
@@ -446,7 +433,7 @@ class VAEGenerate(GenerateComponent):
     def predict(self,
                 batch_size: int,
                 max_length: int,
-                temperature:float=1.0,
+                temperature: float = 1.0,
                 **kwargs
                 ) -> List[str]:
         z = self.get_predict_dataloader()
@@ -483,7 +470,6 @@ class VAEGenerate(GenerateComponent):
             new_x.append(x[i, :end_pads[i]])
 
         return [self.vocab.ids_to_string(t) for t in new_x]
-
 
     def process(self,
                 *args,
@@ -531,4 +517,3 @@ class VAEGenerate(GenerateComponent):
                    model=model,
                    vocab=vocab,
                    **kwargs)
-
