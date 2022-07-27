@@ -88,10 +88,8 @@ def main():
     arg_parser = create_arg_parse()
     cmdline_arguments = arg_parser.parse_args()
 
-
     try:
         if hasattr(cmdline_arguments, "func"):
-
             log_level = getattr(cmdline_arguments, "loglevel", None)
             configure_logging_and_warnings(log_level,
                                            warn_only_once=False,

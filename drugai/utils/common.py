@@ -5,9 +5,10 @@
 # @Email   : 387942239@qq.com
 # @File    : common.py
 from __future__ import annotations, print_function
+from ast import List
 
 import importlib
-from typing import Optional, Any, Text, Dict
+from typing import Callable, Optional, Any, Text, Dict
 import copy
 import logging
 import os
@@ -118,3 +119,26 @@ def class_from_module_path(
             return getattr(m, module_path)
         else:
             raise ImportError(f"Cannot retrieve class from path {module_path}.")
+
+def minimal_kwargs(
+    kwargs: Dict[Text, Any], func: Callable, excluded_keys: Optional[List] = None
+) -> Dict[Text, Any]:
+    """Returns only the kwargs which are required by a function. Keys, contained in
+    the exception list, are not included.
+    """
+
+    excluded_keys = excluded_keys or []
+
+    possible_arguments = arguments_of(func)
+
+    return {
+        k: v
+        for k, v in kwargs.items()
+        if k in possible_arguments and k not in excluded_keys
+    }
+
+def arguments_of(func: Callable) -> List[Text]:
+    """Return the parameters of the function `func` as a list of names."""
+    import inspect
+
+    return list(inspect.signature(func).parameters.keys())

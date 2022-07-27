@@ -77,7 +77,7 @@ class TrainingDataImporter(ABC):
 
     @staticmethod
     def _importer_from_dict(importer_config: Dict,
-                            config_path: Text,
+                            config_file: Text,
                             train_data_paths: Text, 
                             eval_data_paths: Text, 
                             test_data_paths: Text):
@@ -92,4 +92,13 @@ class TrainingDataImporter(ABC):
                 logging.warning(f"Importer '{module_path}' not found.")
                 return None
         importer_config = dict(**importer_config)
-        
+
+        constructor_arguments = drugai.utils.common.minimal_kwargs(
+            importer_config, importer_class
+        )
+        return importer_class(config_file=config_file, 
+                              train_data_paths=train_data_paths, 
+                              eval_data_paths=eval_data_paths,
+                              test_data_paths=test_data_paths,
+                               **constructor_arguments)
+

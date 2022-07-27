@@ -95,6 +95,10 @@ def read_config_yaml(filename: Union[Text, Path]) -> Any:
 def read_csv(path: Text):
     return pd.read_csv(path)
 
+def read_smiles_csv(path:Text, usecols:List=["SMILES"]):
+    return pd.read_csv(path, 
+                       usecols=usecols,
+                       squeeze=True)
 
 def read_smiles_zip(path: Text):
     return pd.read_csv(path,

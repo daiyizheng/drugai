@@ -10,7 +10,8 @@ import os
 from typing import Text, Any
 
 import numpy as np
-from moses.script_utils import read_smiles_csv
+
+from drugai.utils.io import read_smiles_csv
 
 
 def training_data_from_paths(path: Text,

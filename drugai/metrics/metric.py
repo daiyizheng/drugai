@@ -11,11 +11,10 @@ from pathlib import Path
 from typing import List, Text, Dict, Any, Optional
 import logging
 
-from moses.script_utils import read_smiles_csv
 from rdkit.Chem.rdchem import Mol
 
 from drugai.models.component_builder import ComponentBuilder
-from drugai.utils.io import create_directory, write_json_to_file
+from drugai.utils.io import create_directory, read_smiles_csv, write_json_to_file
 
 logger = logging.getLogger(__name__)
 
