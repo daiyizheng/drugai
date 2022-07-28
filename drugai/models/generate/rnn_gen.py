@@ -19,6 +19,7 @@ from torch.nn.utils.rnn import pack_padded_sequence, pad_packed_sequence
 import torch.optim as optim
 import torch.nn.functional as F
 from torch.utils.data import DataLoader
+from drugai.models.generate.gen_vocab import CharRNNVocab
 
 from drugai.shared.importers.training_data_importer import TrainingDataImporter
 from drugai.models.dataset import default_collate_fn
@@ -111,8 +112,9 @@ class RNNGenerate(GenerateComponent):
               file_importer: TrainingDataImporter,
               **kwargs):
         training_data = file_importer.get_data(mode="gen",
-                                               num_workers = kwargs.get("num_workers", None) if kwargs.get("num_workers", None) else 0)
-        self.vocab = training_data.build_vocab(model_name=self.name)
+                                               num_workers = kwargs.get("num_workers", None) \
+                                                if kwargs.get("num_workers", None) else 0)
+        self.vocab = training_data.build_vocab(CharRNNVocab)
         self.component_config["vocab_size"] = len(self.vocab)
         self.component_config["pad_token_ids"] = self.vocab.pad_token_ids
         self.model = RNN(vocab_size=self.component_config["vocab_size"],

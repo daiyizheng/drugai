@@ -11,17 +11,12 @@ from typing import Text, Any
 
 from torch.utils.data import DataLoader
 
-from drugai.models.generate.gen_vocab import CharRNNVocab
+from drugai.models.vocab import Vocab
 
 logger = logging.getLogger(__name__)
 
 
 class TrainingData:
-    mode_name_map = {
-        "RNNGenerate": CharRNNVocab,
-        "VAEGenerate": CharRNNVocab
-    }
-
     def __init__(self,
                  train_data,
                  eval_data = None,
@@ -54,8 +49,6 @@ class TrainingData:
                           collate_fn=collate_fn)
 
     def build_vocab(self,
-                    model_name
+                    vocab:Vocab
                     ) -> "Vocab":
-        if model_name not in self.mode_name_map:
-            raise KeyError
-        return self.mode_name_map[model_name].from_data(self.train_data)
+        return vocab.from_data(self.train_data)

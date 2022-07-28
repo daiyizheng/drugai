@@ -10,7 +10,6 @@ from typing import Optional, Text, Union, List, Any, Dict
 import logging
 from abc import ABC, abstractmethod
 
-from drugai.shared.importers.drug_importer import DrugImporter
 from drugai.shared.training_data import TrainingData
 import drugai.utils.common
 from drugai.utils.io import read_config_yaml
@@ -68,12 +67,23 @@ class TrainingDataImporter(ABC):
         from drugai.shared.importers.drug_importer import DrugImporter
         config = config or {}
         importers = config.get("importers", [])  ## 导入依赖,这里是自定义的导入模块
+
+        if len(importers)>1:
+            logging.warning("multiple `importer` modules are not supported")
+        
         importers = [
             TrainingDataImporter._importer_from_dict(
                 importer, config_file, train_data_paths, eval_data_paths, test_data_paths
             )
             for importer in importers
         ]
+        if not importers:
+            importers = [DrugImporter(config_file=config_file,
+                                      train_data_paths=train_data_paths,
+                                      eval_data_paths=eval_data_paths,
+                                      test_data_paths=test_data_paths)]
+
+        return importers[0]
 
     @staticmethod
     def _importer_from_dict(importer_config: Dict,
@@ -81,7 +91,8 @@ class TrainingDataImporter(ABC):
                             train_data_paths: Text, 
                             eval_data_paths: Text, 
                             test_data_paths: Text):
-
+        from drugai.shared.importers.drug_importer import DrugImporter
+        
         module_path = importer_config.pop("name", None)
         if module_path == DrugImporter.__name__:
             importer_class = DrugImporter

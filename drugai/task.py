@@ -19,9 +19,9 @@ logger = logging.getLogger(__name__)
 
 
 def train(args: argparse.Namespace):
-    file_importer = DrugImporter(config_file=args.config,
-                                 train_data_paths=args.train_dir,
-                                 eval_data_paths=args.eval_dir)
+    file_importer = DrugImporter.load_from_config(config_file=args.config,
+                                                  train_data_paths=args.train_dir,
+                                                  eval_data_paths=args.eval_dir)
     print("no_cuda", args.no_cuda)
     trainer = Trainer(file_importer=file_importer,
                       tensorboardx_dir=args.tensorboardx_dir,
@@ -35,8 +35,8 @@ def train(args: argparse.Namespace):
 
 
 def predict(args: argparse.Namespace):
-    file_importer = DrugImporter(config_file=args.config,
-                                 test_data_paths=args.test_dir)
+    file_importer = DrugImporter.load_from_config(config_file=args.config,
+                                                  test_data_paths=args.test_dir)
     print("no_cuda", args.no_cuda)
     model_dir = "" if args.model is None else args.model
     interpreter = create_interpreter(cfg=file_importer.get_config(),
@@ -53,8 +53,8 @@ def visualize(args: argparse.Namespace)->None:
 
 
 def metric(args: argparse.Namespace):
-    file_importer = DrugImporter(config_file=args.config,
-                                 test_data_paths=args.test_dir)
+    file_importer = DrugImporter.load_from_config(config_file=args.config,
+                                                  test_data_paths=args.test_dir)
     print("no_cuda", args.no_cuda)
     met = Metric(file_importer.get_config())
     content = met.compute(gen_dir=args.gen_dir,

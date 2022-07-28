@@ -11,15 +11,17 @@ from functools import partial
 from typing import Text, Optional, Any, Dict, List
 import logging
 
-from torch.nn.utils import clip_grad_norm_
+
 from tqdm import tqdm
 import numpy as np
 import torch
 import torch.optim as optim
 import torch.nn.functional as F
+from torch.nn.utils import clip_grad_norm_
 import torch.nn as nn
 
 from drugai.shared.importers.training_data_importer import TrainingDataImporter
+from drugai.models.generate.gen_vocab import CharRNNVocab
 from drugai.models.dataset import single_collate_fn
 from drugai.models.losses.cosine_annealing_lr_with_restart import CosineAnnealingLRWithRestart
 from drugai.models.losses.kl_annealer import KLAnnealer
@@ -263,7 +265,7 @@ class VAEGenerate(GenerateComponent):
         training_data = file_importer.get_data(mode="gen",
                                                num_workers=kwargs.get("num_workers", None) if kwargs.get("num_workers",
                                                                                                          None) else 0)
-        self.vocab = training_data.build_vocab(model_name=self.name)
+        self.vocab = training_data.build_vocab(CharRNNVocab)
 
         self.component_config["vocab_size"] = len(self.vocab)
         self.component_config["pad_token_ids"] = self.vocab.pad_token_ids
