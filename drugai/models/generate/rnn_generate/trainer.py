@@ -1,71 +1,41 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-# @Time    : 2022/7/9 13:46
-# @Author  : Yizheng Dai
-# @Email   : 387942239@qq.com
-# @File    : rnn_generate.py
-from __future__ import annotations, print_function
-
-import os
-from functools import partial
+# -*- encoding: utf-8 -*-
+'''
+Filename         :rnn_generate.py
+Description      :
+Time             :2022/08/01 22:14:13
+Author           :daiyizheng
+Email            :387942239@qq.com
+Version          :1.0
+'''
+from __future__ import absolute_import, division, print_function, unicode_literals
 from typing import Text, Any, Dict, Optional, List
 import logging
+import os
+from functools import partial
+
 
 import numpy as np
-from tqdm import tqdm
 import torch
-from torch import nn as nn
-from torch.nn.utils.rnn import pack_padded_sequence, pad_packed_sequence
 import torch.optim as optim
+import torch.nn as nn
 import torch.nn.functional as F
 from torch.utils.data import DataLoader
-from drugai.models.generate.gen_vocab import CharRNNVocab
+from tqdm import tqdm
 
-from drugai.shared.importers.training_data_importer import TrainingDataImporter
+from .model import RNN
 from drugai.models.dataset import default_collate_fn
-from drugai.models.vocab import Vocab
 from drugai.models.generate.gen_component import GenerateComponent
+from drugai.models.generate.gen_vocab import CharRNNVocab, Vocab
+from drugai.shared.importers.training_data_importer import TrainingDataImporter
+
+
 
 try:
     from apex import amp
 except ImportError:
     raise ImportError("Please install apex from https://www.github.com/nvidia/apex to use fp16 training.")
-
+    
 logger = logging.getLogger(__name__)
-
-
-class RNN(nn.Module):
-    def __init__(self,
-                 vocab_size: int,
-                 num_layers: int,
-                 dropout_rate: int,
-                 hidden_size: int,
-                 pad_token_ids: int):
-        super(RNN, self).__init__()
-        self.hidden_size = hidden_size
-        self.num_layers = num_layers
-        self.dropout_rate = dropout_rate
-        self.vocab_size = self.input_size = self.output_size = vocab_size
-        self.embedding_layer = nn.Embedding(self.vocab_size, self.vocab_size, padding_idx=pad_token_ids)
-        self.lstm_layer = nn.LSTM(self.input_size,
-                                  self.hidden_size,
-                                  self.num_layers,
-                                  dropout=self.dropout_rate,
-                                  batch_first=True)
-        self.linear_layer = nn.Linear(self.hidden_size, self.output_size)
-
-    def forward(self,
-                input_ids: torch.Tensor,
-                lengths: torch.Tensor,
-                hiddens: torch.Tensor = None):
-        embedd = self.embedding_layer(input_ids)
-        embedd = pack_padded_sequence(embedd, lengths.to("cpu"), batch_first=True)
-        embedd, hiddens = self.lstm_layer(embedd, hiddens)
-        embedd, _ = pad_packed_sequence(embedd, batch_first=True)
-        embedd = self.linear_layer(embedd)
-
-        return embedd, hiddens
-
 
 class RNNGenerate(GenerateComponent):
     defaults = {

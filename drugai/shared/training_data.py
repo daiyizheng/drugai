@@ -11,7 +11,9 @@ from typing import Text, Any
 
 from torch.utils.data import DataLoader
 
-from drugai.models.vocab import Vocab
+from drugai.models.generate.gen_vocab import Vocab
+
+
 
 logger = logging.getLogger(__name__)
 

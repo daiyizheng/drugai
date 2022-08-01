@@ -11,8 +11,8 @@ import traceback
 from typing import Dict, Text, Any, Optional, Type
 
 ## 生成模型
-from drugai.models.generate.rnn_gen import RNNGenerate
-from drugai.models.generate.vae_gen import VAEGenerate
+from drugai.models.generate.rnn_generate.trainer import RNNGenerate
+from drugai.models.generate.vae_generate.trainer import VAEGenerate
 
 ## 评估器
 from drugai.metrics.unique_metric import UniqueMetic
@@ -25,6 +25,7 @@ from drugai.metrics.fcd_metric import FCDMetric
 from drugai.metrics.frag_metric import FragMetric
 from drugai.metrics.scaf_metric import ScafMetric
 from drugai.metrics.snn_metric import SNNMetric
+
 
 
 from drugai.utils.common import class_from_module_path

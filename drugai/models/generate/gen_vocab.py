@@ -5,10 +5,12 @@
 # @Email   : 387942239@qq.com
 # @File    : generate_vocab.py
 from __future__ import annotations, print_function
+import abc
 
 import torch
 
-from drugai.models.vocab import Vocab
+class Vocab(abc.ABC):
+    pass
 
 
 class SpecialTokens:

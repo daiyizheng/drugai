@@ -13,7 +13,6 @@ from drugai import Metric, Visualize
 from drugai.models.interpreter import create_interpreter
 from drugai.models.trainer import Trainer
 from drugai.shared.importers.drug_importer import DrugImporter
-from drugai.utils.io import read_config_yaml
 
 logger = logging.getLogger(__name__)
 
