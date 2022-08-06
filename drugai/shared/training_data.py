@@ -7,22 +7,20 @@
 from __future__ import annotations, print_function
 
 import logging
-from typing import Text, Any
+from typing import Dict, Text, Any, List
 
 from torch.utils.data import DataLoader
 
 from drugai.models.generate.gen_vocab import Vocab
 
-
-
 logger = logging.getLogger(__name__)
 
-
+    
 class TrainingData:
     def __init__(self,
-                 train_data,
-                 eval_data = None,
-                 test_data = None,
+                 train_data: List,
+                 eval_data: List=None,
+                 test_data: List=None,
                  num_workers: int = 0,
                  **kwargs):
         self.train_data = train_data
@@ -33,8 +31,10 @@ class TrainingData:
     def dataloader(self,
                    batch_size: int,
                    collate_fn: Any,
+                   
                    shuffle: bool = True,
                    mode: Text = "train"):
+
         if mode == "train":
             dataset = self.train_data
         elif mode == "eval":
@@ -51,6 +51,6 @@ class TrainingData:
                           collate_fn=collate_fn)
 
     def build_vocab(self,
-                    vocab:Vocab
+                    vocab: Vocab
                     ) -> "Vocab":
         return vocab.from_data(self.train_data)

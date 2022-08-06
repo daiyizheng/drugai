@@ -35,6 +35,7 @@ def write_text_file(
     with open(file_path, mode, encoding=encoding) as file:
         file.write(content)
 
+
 def write_json_to_file(filename: Text, obj: Any, **kwargs: Any) -> None:
     """Write an object as a json string to a file."""
 
@@ -95,10 +96,13 @@ def read_config_yaml(filename: Union[Text, Path]) -> Any:
 def read_csv(path: Text):
     return pd.read_csv(path)
 
-def read_smiles_csv(path:Text, usecols:List=["SMILES"]):
-    return pd.read_csv(path, 
+
+def read_smiles_csv(path: Text,
+                    usecols: List = ["SMILES"]):
+    return pd.read_csv(path,
                        usecols=usecols,
                        squeeze=True)
+
 
 def read_smiles_zip(path: Text):
     return pd.read_csv(path,

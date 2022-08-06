@@ -1,1 +1,3 @@
 # drugai
+
+## install

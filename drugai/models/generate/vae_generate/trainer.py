@@ -21,8 +21,7 @@ import torch.optim as optim
 import torch.nn.functional as F
 from torch.nn.utils import clip_grad_norm_
 from drugai.models.dataset import single_collate_fn
-
-
+from drugai.shared.preprocess.basic_preprocessor import BasicPreprocessor
 
 from .model import VAE
 from drugai.shared.importers.training_data_importer import TrainingDataImporter
@@ -138,9 +137,8 @@ class VAEGenerate(GenerateComponent):
     def train(self,
               file_importer: TrainingDataImporter,
               **kwargs):
-        training_data = file_importer.get_data(mode="gen",
-                                               num_workers=kwargs.get("num_workers", None) if kwargs.get("num_workers",
-                                                                                                         None) else 0)
+        training_data = file_importer.get_data(preprocessor = BasicPreprocessor(),
+                                               num_workers=kwargs.get("num_workers", None) if kwargs.get("num_workers", None) else 0)
         self.vocab = training_data.build_vocab(CharRNNVocab)
 
         self.component_config["vocab_size"] = len(self.vocab)

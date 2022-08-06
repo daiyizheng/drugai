@@ -13,7 +13,6 @@ import logging
 import os
 from functools import partial
 
-
 import numpy as np
 import torch
 import torch.optim as optim
@@ -22,20 +21,20 @@ import torch.nn.functional as F
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
+from drugai.shared.preprocess.basic_preprocessor import BasicPreprocessor
 from .model import RNN
 from drugai.models.dataset import default_collate_fn
 from drugai.models.generate.gen_component import GenerateComponent
 from drugai.models.generate.gen_vocab import CharRNNVocab, Vocab
 from drugai.shared.importers.training_data_importer import TrainingDataImporter
 
-
-
 try:
     from apex import amp
 except ImportError:
     raise ImportError("Please install apex from https://www.github.com/nvidia/apex to use fp16 training.")
-    
+
 logger = logging.getLogger(__name__)
+
 
 class RNNGenerate(GenerateComponent):
     defaults = {
@@ -81,9 +80,9 @@ class RNNGenerate(GenerateComponent):
     def train(self,
               file_importer: TrainingDataImporter,
               **kwargs):
-        training_data = file_importer.get_data(mode="gen",
-                                               num_workers = kwargs.get("num_workers", None) \
-                                                if kwargs.get("num_workers", None) else 0)
+        training_data = file_importer.get_data(preprocessor = BasicPreprocessor(),
+                                               num_workers=kwargs.get("num_workers", None) \
+                                                   if kwargs.get("num_workers", None) else 0)
         self.vocab = training_data.build_vocab(CharRNNVocab)
         self.component_config["vocab_size"] = len(self.vocab)
         self.component_config["pad_token_ids"] = self.vocab.pad_token_ids
@@ -96,12 +95,12 @@ class RNNGenerate(GenerateComponent):
         train_dataloader = training_data.dataloader(batch_size=self.component_config["batch_size"],
                                                     collate_fn=partial(default_collate_fn, self.vocab),
                                                     shuffle=True,
-                                                    mode= "train")
+                                                    mode="train")
 
         eval_dataloader = training_data.dataloader(batch_size=self.component_config["batch_size"],
-                                                    collate_fn=partial(default_collate_fn, self.vocab),
-                                                    shuffle=False,
-                                                    mode= "eval")
+                                                   collate_fn=partial(default_collate_fn, self.vocab),
+                                                   shuffle=False,
+                                                   mode="eval")
 
         self.optimizer, scheduler = self.config_optimizer()
         self.criterion = self.config_criterion()
@@ -148,7 +147,7 @@ class RNNGenerate(GenerateComponent):
             loss.backward()
         self.optimizer.step()
 
-        self.logs["loss"] = (self.logs["loss"] + loss.item())/ (step + 1)
+        self.logs["loss"] = (self.logs["loss"] + loss.item()) / (step + 1)
         self.epoch_data.set_postfix({"loss": self.logs["loss"], **{"step": step + 1}})
         self.global_step = 1
 
@@ -194,7 +193,7 @@ class RNNGenerate(GenerateComponent):
         target = target.to(self.device)
         logits, _ = self(**batch)
         loss = self.criterion(logits.view(-1, logits.shape[-1]), target.view(-1))
-        self.logs["eval_loss"] = (self.logs["eval_loss"]+loss.item())/ (step + 1)
+        self.logs["eval_loss"] = (self.logs["eval_loss"] + loss.item()) / (step + 1)
         self.eval_data.set_postfix({**{"eval_loss": self.logs["eval_loss"]}, **{"eval_step": step + 1}})
         return logits
 
@@ -280,9 +279,9 @@ class RNNGenerate(GenerateComponent):
                     dropout_rate=meta["dropout_rate"],
                     hidden_size=meta["hidden_size"],
                     pad_token_ids=meta["pad_token_ids"])
-        model_state_dict = torch.load(os.path.join(model_dir, meta["name"]+"_model.pt"))
+        model_state_dict = torch.load(os.path.join(model_dir, meta["name"] + "_model.pt"))
         model.load_state_dict(model_state_dict)
-        vocab = torch.load(os.path.join(model_dir, meta["name"]+"_vocab.pt"))
+        vocab = torch.load(os.path.join(model_dir, meta["name"] + "_vocab.pt"))
         return cls(component_config=meta,
                    model=model,
                    vocab=vocab,
