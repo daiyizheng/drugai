@@ -22,6 +22,7 @@ from drugai.utils.common import type_check_num_atoms
 
 logger = logging.getLogger(__name__)
 
+ATOM_VALENCY = {6:4, 7:3, 8:2, 9:1, 15:3, 16:2, 17:1, 35:1, 53:1}
 
 class MoFlowPreprocessor(Preprocessor):
     def __init__(self, 
@@ -61,7 +62,7 @@ class MoFlowPreprocessor(Preprocessor):
                            )->Tuple[np.ndarray, np.ndarray]:
 
         type_check_num_atoms(mol, self.max_atoms)
-        atom_array = Message.get_ori_atom_ids(mol=mol, max_length=self.max_atoms)
+        atom_array = Message.get_atom_ids(mol=mol, max_length=self.max_atoms, atom_token_to_id=self.atom_token_to_id)
         adj_array = self.construct_discrete_edge_matrix(mol, out_size=self.max_atoms)
         return atom_array, adj_array
 
@@ -124,6 +125,9 @@ class MoFlowPreprocessor(Preprocessor):
         
         if self.__dict__.get('bond_type_token_to_id', None) is None:
             self.bond_type_token_to_id, self.bond_type_id_to_token = self.bond_type_map(c_mols)
+        
+        if self.__dict__.get("atom_token_to_id", None) is None:
+            self.atom_token_to_id, self.atom_id_to_token = self.atom_type_map(c_mols)
         
         logger.info("load atom features and adj features start...")
         messages = []

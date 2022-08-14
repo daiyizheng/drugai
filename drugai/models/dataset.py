@@ -40,7 +40,7 @@ def single_collate_fn(vocab, messages:List[Message]):
     return batch_input_ids
 
 
-def moflow_collate_fn(atomic_num_list:List,
+def moflow_collate_fn(num_max_id:List,
                       out_size:int,
                       data:torch.tensor):
     node_array = []
@@ -48,7 +48,7 @@ def moflow_collate_fn(atomic_num_list:List,
     for d in data:# [batch]
         node, adj = d   # node (9,), adj (4,9,9), label (15,)
         # convert to one-hot vector
-        node = one_hot(atomic_num_list=atomic_num_list, out_size=out_size, data=node).astype(np.float32)
+        node = one_hot(num_max_id=num_max_id, out_size=out_size, data=node).astype(np.float32)
         # single, double, triple and no-bond. Note that last channel axis is not connected instead of aromatic bond. 单，双，三和无键。 请注意，最后一个通道轴没有连接而不是芳香键。
         adj = np.concatenate([adj[:3], 1 - np.sum(adj[:3], axis=0, keepdims=True)], axis=0).astype(np.float32)
         node_array.append(node)

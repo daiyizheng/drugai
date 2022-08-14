@@ -119,13 +119,10 @@ class MoFlowGenerate(GenerateComponent):
         if len(atomic_num_list)!=self.component_config["a_n_type"]:
             raise ValueError("a_n_type is not equal to the number of atomic numbers")
         self.component_config["atomic_num_list"] = atomic_num_list
+
         if self.component_config["max_atoms"]!=self.component_config["a_n_node"]:
             raise ValueError("max_atoms is not equal to a_n_node")
-        bond_type_token_to_id = preprocessor.bond_type_token_to_id
-        if len(bond_type_token_to_id)!=self.component_config["b_n_type"]:
-            raise ValueError("b_n_type is not equal to the number of bond types")
-        self.component_config["bond_type_token_to_id"] = bond_type_token_to_id # bond_type_to_channel
-        
+        logger.info("Model Initialization....." )        
         self.model = MoFlow(b_n_type=self.component_config["b_n_type"],
                             a_n_node= self.component_config["a_n_node"],
                             a_n_type=self.component_config["a_n_type"],
@@ -146,39 +143,45 @@ class MoFlowGenerate(GenerateComponent):
                             a_affine=self.component_config["a_affine"])
         self.model.to(self.device)
 
+        
+        train_dataloader = training_data.dataloader(batch_size=self.component_config["batch_size"],
+                                                    collate_fn=partial(moflow_collate_fn, len(atomic_num_list), self.component_config["max_atoms"]),
+                                                    shuffle=True,
+                                                    mode="train")
+
+        eval_dataloader = training_data.dataloader(batch_size=self.component_config["batch_size"],
+                                                   collate_fn=partial(moflow_collate_fn, len(atomic_num_list), self.component_config["max_atoms"]),
+                                                   shuffle=False,
+                                                   mode="eval")
+        self.optimizer, scheduler = self.config_optimizer()
+        self.compute_metric = None
+
         if self.fp16:
             try:
                 from apex import amp
             except ImportError:
                 raise ImportError("Please install apex from https://www.github.com/nvidia/apex to use fp16 training.")
-            self.model, optimizer = amp.initialize(self.model, optimizer, opt_level=self.fp16_opt_level)
+            self.model, self.optimizer = amp.initialize(self.model, self.optimizer, opt_level=self.fp16_opt_level)
 
         # Multi-gpu training (should be after apex fp16 initialization)
         if self.n_gpu > 1:
             self.model = torch.nn.DataParallel(self.model)
 
-        train_dataloader = training_data.dataloader(batch_size=self.component_config["batch_size"],
-                                                    collate_fn=partial(moflow_collate_fn, atomic_num_list, self.component_config["max_atoms"]),
-                                                    shuffle=True,
-                                                    mode="train")
-
-        eval_dataloader = training_data.dataloader(batch_size=self.component_config["batch_size"],
-                                                   collate_fn=partial(moflow_collate_fn, atomic_num_list, self.component_config["max_atoms"]),
-                                                   shuffle=False,
-                                                   mode="eval")
-        self.optimizer, scheduler = self.config_optimizer()
-        self.compute_metric = None
         self.model.zero_grad()
 
         for epoch in range(self.component_config["epochs"]):
+            logger.info("Train: Current epoch {} Start...".format(epoch))
             scheduler.step()  # Update learning rate schedule
             self.logs = {"loss": 0.0, "eval_loss": 0.0}
             self.epoch_data = tqdm(train_dataloader, desc='Training (epoch #{})'.format(epoch))
             self.model.train()
             self.train_epoch()
             self.logs["learning_rate"] = scheduler.get_lr()[0]
+            logger.info("Train: Current epoch {} End...".format(epoch))
             if training_data.eval_data is not None:
+                logger.info("Evaluate: Current epoch {} Start...".format(epoch))
                 self.evaluate(eval_dataloader=eval_dataloader)
+                logger.info("Evaluate: Current epoch {} End...".format(epoch))
             for key, value in self.logs.items():
                 self.tb_writer.add_scalar(key, value, epoch)
 
@@ -379,7 +382,6 @@ class MoFlowGenerate(GenerateComponent):
                                  x, 
                                  atomic_num_list):
         """
-
         :param adj:  (100,4,9,9)
         :param x: (100.9,5)
         :param atomic_num_list: [6,7,8,9,0]

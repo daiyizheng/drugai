@@ -80,10 +80,10 @@ class Preprocessor(abc.ABC):
             return []
         if isinstance(mols[0], Message):
             mols = [Message.smiles_to_mol(m.smiles) for m in mols]
-        atom_labels = list(set([atom.GetAtomicNum() for mol in mols for atom in mol.GetAtoms()]))
+        atom_labels = sorted(list(set([atom.GetAtomicNum() for mol in mols for atom in mol.GetAtoms()])))
         if atom_padding_token in atom_labels:
             raise ValueError("atom_padding_token is in atom_labels")
-        atom_labels = sorted(atom_labels + [atom_padding_token])
+        atom_labels = atom_labels + [atom_padding_token]
         return atom_labels
 
     @staticmethod
@@ -101,7 +101,7 @@ class Preprocessor(abc.ABC):
             return []
         if isinstance(mols[0], Message):
             mols = [Message.smiles_to_mol(m.smiles) for m in mols]
-        bond_labels = list(sorted(set(bond.GetBondType() for mol in mols for bond in mol.GetBonds())))
+        bond_labels = sorted(list(set(bond.GetBondType() for mol in mols for bond in mol.GetBonds())))
         if bond_padding_token in bond_labels:
             raise ValueError("bond_padding_token is in bond_labels")
         bond_labels = [bond_padding_token] + bond_labels
@@ -125,7 +125,7 @@ class Preprocessor(abc.ABC):
         smiles_labels = list(set(c for mol in mols for c in Chem.MolToSmiles(mol)))
         if smiles_padding_token in smiles_labels:
             raise ValueError("smiles_padding_token is in smiles_labels")
-        smiles_labels = [smiles_padding_token] + smiles_labels
+        smiles_labels =  smiles_labels + [smiles_padding_token]
         return smiles_labels
     
     @staticmethod

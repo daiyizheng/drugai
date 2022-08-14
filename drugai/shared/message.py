@@ -232,10 +232,19 @@ class Message(Molecular):
     def get_atom_ids(mol: Mol,
                      max_length: int,
                      atom_token_to_id: dict,
-                     atom_padding_token: int = 0):
+                     atom_padding_token: int = 0
+                     )->np.ndarray:
+        atom_list = [a.GetAtomicNum() for a in mol.GetAtoms()]
+        if max_length is None:
+            return np.array(atom_list, dtype=np.int32)
+        
+        n_atom = len(atom_list)
+        if max_length < len(atom_list):
+            raise ValueError(f"max_length {max_length} is smaller than the length of ori_atom_list {n_atom}")
+    
         return np.array(
-            [atom_token_to_id.get(atom, atom_token_to_id[atom_padding_token]) for atom in mol.GetAtomicNum()] + \
-            [atom_token_to_id[atom_padding_token] * (max_length - mol.GetNumAtoms())], dtype=np.int32)
+            [atom_token_to_id.get(atom, atom_token_to_id[atom_padding_token]) for atom in atom_list] + \
+            [atom_token_to_id[atom_padding_token]] * (max_length - n_atom), dtype=np.int32)
     
     @staticmethod
     def get_smiles_ids(smiles: Text,

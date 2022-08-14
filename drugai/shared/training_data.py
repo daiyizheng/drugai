@@ -70,7 +70,32 @@ class TrainingData:
 
     @property
     def get_atom_list(self):
+        atom_token_to_id = getattr(self.preprocessor, "atom_token_to_id", None)
+        if atom_token_to_id is not None:
+            return atom_token_to_id.keys()
         return self.preprocessor.atom_list(self.train_data)
+    
+    @property
+    def get_atom_token_to_id(self):
+        atom_token_to_id = getattr(self.preprocessor, "atom_token_to_id", None)
+        if atom_token_to_id is not None:
+            return atom_token_to_id
+        return {v:i for i, v in enumerate(self.get_atom_list)}
+    
+    @property
+    def get_bond_list(self):
+        bond_type_token_to_id = getattr(self.preprocessor, "bond_type_token_to_id", None)
+        if bond_type_token_to_id is None:
+            raise ValueError("bond_type_token_to_id is None")
+        bond_list = [t[0] for t in sorted(bond_type_token_to_id.items(), key=lambda x: x[1])]
+        return bond_list
+    
+    @property
+    def get_bond_token_to_id(self):
+        bond_type_token_to_id = getattr(self.preprocessor, "bond_type_token_to_id", None)
+        if bond_type_token_to_id is None:
+            raise ValueError("bond_type_token_to_id is None")
+        return bond_type_token_to_id
     
     def get_vocab(self,
                 vocab: Vocab

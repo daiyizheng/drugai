@@ -6,7 +6,7 @@ train:
     max_atoms: 9
 
 predict:
-  - name: RNNGenerate
+  - name: MoFlowGenerate
     n_sample: 10000
 
 metric:
