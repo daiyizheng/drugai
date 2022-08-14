@@ -9,6 +9,7 @@ Version          :1.0
 '''
 
 from __future__ import absolute_import, division, print_function, unicode_literals
+from cmath import log
 import os
 import logging
 from functools import partial
@@ -65,11 +66,16 @@ class CircularBuffer:
 
 class VAEGenerate(GenerateComponent):
     defaults = {
+        # preprocessors hyperparameters
+        "usecols" : ["SMILES"],
+
+        # training hyperparameters
         "epochs": None,
         "pad_token_ids": -1,
         "batch_size": 512,
         "max_length": 100,
 
+        # model hyperparameters
         "vocab_size": -1,
         "encoder_hidden_size": 256,
         "encoder_num_layers": 1,
@@ -85,7 +91,7 @@ class VAEGenerate(GenerateComponent):
         "decoder_rnn_type": "gru",
         "freeze_embeddings": False,
 
-        "gradient_accumulation_steps": 1,
+        # training optim hyperparameters
         "clip_grad": 50,
         "kl_start": 0,
         "kl_w_start": 0.0,
@@ -96,6 +102,9 @@ class VAEGenerate(GenerateComponent):
         "lr_n_mult": 1,
         "lr_end": 3 * 1e-4,
         "n_last": 1000,
+
+        # sample hyperparameters
+        "n_sample": 10000, # number of samples
     }
 
     def __init__(self,
@@ -137,10 +146,12 @@ class VAEGenerate(GenerateComponent):
     def train(self,
               file_importer: TrainingDataImporter,
               **kwargs):
+        logger.info("Training VAE")
         training_data = file_importer.get_data(preprocessor = BasicPreprocessor(),
-                                               num_workers=kwargs.get("num_workers", None) if kwargs.get("num_workers", None) else 0)
-        self.vocab = training_data.build_vocab(CharRNNVocab)
-
+                                               num_workers=kwargs.get("num_workers", None) if kwargs.get("num_workers", None) else 0,
+                                                                     usecols=self.component_config["usecols"])
+        self.vocab = training_data.get_vocab(CharRNNVocab)
+        logger.info("initializing model")
         self.component_config["vocab_size"] = len(self.vocab)
         self.component_config["pad_token_ids"] = self.vocab.pad_token_ids
         self.model = VAE(vocab_size=self.component_config["vocab_size"],
@@ -159,17 +170,21 @@ class VAEGenerate(GenerateComponent):
                          decoder_rnn_type=self.component_config["decoder_rnn_type"],
                          freeze_embeddings=self.component_config["freeze_embeddings"])
         self.model.to(self.device)
+        logger.info("load dataset")
         train_dataloader = training_data.dataloader(batch_size=self.component_config["batch_size"],
                                                     collate_fn=partial(single_collate_fn, self.vocab),
                                                     shuffle=True,
-                                                    mode="train")
+                                                    mode="train") 
 
         eval_dataloader = training_data.dataloader(batch_size=self.component_config["batch_size"],
                                                    collate_fn=partial(single_collate_fn, self.vocab),
                                                    shuffle=False,
                                                    mode="eval")
-
+        logger.info("initializing optimizer")
         self.optimizer, [kl_annealer, lr_annealer] = self.config_optimizer()
+        # Multi-gpu training (should be after apex fp16 initialization)
+        # if self.n_gpu > 1:
+        #     self.model = torch.nn.DataParallel(self.model)
         self.compute_metric = None
         self.model.zero_grad()
 
@@ -179,15 +194,19 @@ class VAEGenerate(GenerateComponent):
         logger.info("epochs:{}".format(epochs))
 
         for epoch in range(epochs):
+            logger.info("train: current epoch:{} start".format(epoch))
             kl_weight = kl_annealer(epoch)
             lr_annealer.step()
             self.logs = {"loss": 0.0, "eval_loss": 0.0}
             self.epoch_data = tqdm(train_dataloader, desc='Training (epoch #{})'.format(epoch))
             self.model.train()
             self.train_epoch(kl_weight=kl_weight)
+            logger.info("train: current epoch:{} end".format(epoch))
 
             if training_data.eval_data is not None:
+                logger.info("eval: current epoch:{} start".format(epoch))
                 self.evaluate(eval_dataloader=eval_dataloader, kl_weight=kl_weight)
+                logger.info("eval: current epoch:{} end".format(epoch))
             for key, value in self.logs.items():
                 self.tb_writer.add_scalar(key, value, epoch)
 
@@ -198,9 +217,7 @@ class VAEGenerate(GenerateComponent):
         self.recon_loss_values = CircularBuffer(self.component_config["n_last"])
         self.loss_values = CircularBuffer(self.component_config["n_last"])
         for step, batch_data in enumerate(self.epoch_data):
-            self.train_step(batch_data=batch_data,
-                            step=step,
-                            kl_weight=kl_weight)
+            self.train_step(batch_data=batch_data, step=step, kl_weight=kl_weight)
 
     def train_step(self,
                    batch_data,
@@ -218,8 +235,6 @@ class VAEGenerate(GenerateComponent):
 
         if self.n_gpu > 1:
             loss = loss.mean()  # mean() to average on multi-gpu parallel training
-        if self.component_config["gradient_accumulation_steps"] > 1:
-            loss = loss / self.component_config["gradient_accumulation_steps"]
 
         if self.fp16:
             with amp.scale_loss(loss, self.optimizer) as scaled_loss:
@@ -244,10 +259,8 @@ class VAEGenerate(GenerateComponent):
                                      "loss_value": loss_value,
                                      "lr": lr,
                                      **{"step": step + 1}})
-
-        if (step + 1) % self.component_config["gradient_accumulation_steps"] == 0:
-            clip_grad_norm_(self.get_optim_params(self.model),
-                            self.component_config["clip_grad"])
+        
+        clip_grad_norm_(self.get_optim_params(self.model), self.component_config["clip_grad"])
         return loss_value
 
     def evaluate(self,
@@ -301,6 +314,7 @@ class VAEGenerate(GenerateComponent):
     def get_predict_dataloader(self,
                                *args,
                                **kwargs):
+        logger.info("get_predict_dataloader: start")
         return torch.randn(self.component_config["batch_size"],
                            self.model.q_mu.out_features,
                            device=self.device)
@@ -316,6 +330,7 @@ class VAEGenerate(GenerateComponent):
         z = z.to(self.device)
         z_0 = z.unsqueeze(1)
         # Initial values
+        logger.info("predict: initial values")
         h = self.model.decoder_lat(z)
         h = h.unsqueeze(0).repeat(self.model.decoder_rnn.num_layers, 1, 1)
         w = torch.tensor(self.vocab.bos_token_ids, device=self.device).repeat(batch_size)
@@ -353,16 +368,20 @@ class VAEGenerate(GenerateComponent):
         n_sample = self.component_config["n_sample"]
         batch_size = self.component_config["batch_size"]
         max_length = self.component_config["max_length"]
+
+        logger.info("process: start, n_sample: {}, batch_size: {}, max_length: {}".format(n_sample, batch_size, max_length))
         self.model.to(self.device)
 
         samples = []
         n = n_sample
+        logger.info("process: Generating samples starting.....")
         with tqdm(n, desc="Generating sample") as T:
             while n_sample > 0:
                 current_sample = self.predict(min(n, batch_size), max_length)
                 samples.extend(current_sample)
                 n_sample -= len(current_sample)
                 T.update(len(current_sample))
+        logger.info("process: Generating samples finished...")
         return {"SMILES": samples}
 
     @classmethod

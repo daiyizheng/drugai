@@ -205,9 +205,9 @@ class MoFlow(nn.Module):
         # + noise didn't change log-det. 1. change to logit transform 2. *0.9 ---> *other value??? 噪音没有改变log-det。 1. 更改为 logit 变换 2. *0.9 ---> *其他值？？？
         if self.training:
             if self.noise_scale == 0:
-                h = h / 2.0 - 0.5 + torch.rand_like(x) * 0.4  # / 2.0  similar to X + U(0, 0.8)   *0.5*0.8=0.4
+                h = h / 2.0 - 0.5 + torch.rand_like(x, dtype=torch.float) * 0.4  # / 2.0  similar to X + U(0, 0.8)   *0.5*0.8=0.4
             else:
-                h = h + torch.rand_like(x) * self.noise_scale  # noise_scale default 0.9
+                h = h + torch.rand_like(x, dtype=torch.float) * self.noise_scale  # noise_scale default 0.9
             # h, log_det_logit_x = logit_pre_process(h) # to delete
         h, sum_log_det_jacs_x = self.atom_model(adj_normalized, h)
         # sum_log_det_jacs_x = sum_log_det_jacs_x + log_det_logit_x  # to delete
@@ -215,9 +215,9 @@ class MoFlow(nn.Module):
         # add uniform noise to adjacency tensors
         if self.training:
             if self.noise_scale == 0:
-                adj = adj / 2.0 - 0.5 + torch.rand_like(adj) * 0.4  # / 2.0
+                adj = adj / 2.0 - 0.5 + torch.rand_like(adj, dtype=torch.float) * 0.4  # / 2.0
             else:
-                adj = adj + torch.rand_like(adj) * self.noise_scale  # (256,4,9,9) noise_scale default 0.9
+                adj = adj + torch.rand_like(adj, dtype=torch.float) * self.noise_scale  # (256,4,9,9) noise_scale default 0.9
             # adj, log_det_logit_adj = logit_pre_process(adj)  # to delete
         adj_h, sum_log_det_jacs_adj = self.bond_model(adj)
         # sum_log_det_jacs_adj = log_det_logit_adj + sum_log_det_jacs_adj  # to delete

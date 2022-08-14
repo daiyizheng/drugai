@@ -7,7 +7,7 @@
 from __future__ import annotations, print_function
 
 from typing import Optional, Text, Union, List, Any, Dict
-import logging
+import logging, os
 from abc import ABC, abstractmethod
 
 from drugai.shared.training_data import TrainingData
@@ -51,6 +51,8 @@ class TrainingDataImporter(ABC):
                          train_data_paths: Optional[Union[List[Text], Text]] = None,
                          eval_data_paths: Optional[Union[List[Text], Text]] = None,
                          test_data_paths: Optional[Union[List[Text], Text]] = None):
+        if not os.path.exists(config_file):
+            raise ValueError(f"Configuration file '{config_file}' does not exist.")
         config = read_config_yaml(config_file) ## 加载config yml文件
         return TrainingDataImporter.load_from_dict(config=config,
                                                   config_file=config_file,

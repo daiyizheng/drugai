@@ -1,12 +1,12 @@
 version: "1.0"
 
 train:
-  - name: RNNGenerate
-    batch_size: 512
+  - name: MoFlowGenerate
     epochs: 1
+    max_atoms: 9
 
 predict:
-  - name: VAEGenerate
+  - name: RNNGenerate
     n_sample: 10000
 
 metric:

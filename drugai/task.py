@@ -52,8 +52,7 @@ def visualize(args: argparse.Namespace)->None:
 
 
 def metric(args: argparse.Namespace):
-    file_importer = DrugImporter.load_from_config(config_file=args.config,
-                                                  test_data_paths=args.test_dir)
+    file_importer = DrugImporter.load_from_config(config_file=args.config)
     print("no_cuda", args.no_cuda)
     met = Metric(file_importer.get_config())
     content = met.compute(gen_dir=args.gen_dir,

@@ -38,25 +38,34 @@ logger = logging.getLogger(__name__)
 
 class RNNGenerate(GenerateComponent):
     defaults = {
+        #pre_processors hyperparameters
+        "usecols":["SMILES"],
+
+        # model
         "vocab_size": -1,
         "num_layers": 3,
         "dropout_rate": 0.5,
         "hidden_size": 768,
-        "max_grad_norm": 1.0,
-        "gradient_accumulation_steps": 1,
-        "learning_rate": 0.001,
+        
+    
+        # training
         "max_length": 100,
         "batch_size": 512,
         "epochs": 10,
+        "learning_rate": 0.001,
         "warmup_steps": 10,
         "gamma": 0.5,
-        "pad_token_ids": -1
+        "pad_token_ids": -1,
+        "max_grad_norm": 1.0,
+
+        # sample hyperparameters
+        "n_sample": 10000, # number of samples
     }
 
     def __init__(self,
                  component_config: Optional[Dict[Text, Any]] = None,
                  vocab: Vocab = None,
-                 model=None,
+                 model = None,
                  **kwargs
                  ):
         super(RNNGenerate, self).__init__(component_config=component_config, **kwargs)
@@ -80,10 +89,13 @@ class RNNGenerate(GenerateComponent):
     def train(self,
               file_importer: TrainingDataImporter,
               **kwargs):
+        logger.info("train: Training RNNGenerate Initialization")
         training_data = file_importer.get_data(preprocessor = BasicPreprocessor(),
                                                num_workers=kwargs.get("num_workers", None) \
-                                                   if kwargs.get("num_workers", None) else 0)
-        self.vocab = training_data.build_vocab(CharRNNVocab)
+                                                   if kwargs.get("num_workers", None) else 0,
+                                                   usecols=self.component_config["usecols"])
+        logger.info("train: Model Initialization")
+        self.vocab = training_data.get_vocab(CharRNNVocab)
         self.component_config["vocab_size"] = len(self.vocab)
         self.component_config["pad_token_ids"] = self.vocab.pad_token_ids
         self.model = RNN(vocab_size=self.component_config["vocab_size"],
@@ -92,6 +104,7 @@ class RNNGenerate(GenerateComponent):
                          hidden_size=self.component_config["hidden_size"],
                          pad_token_ids=self.component_config["pad_token_ids"])
         self.model.to(self.device)
+        logger.info("train: Loader Dataset Initialization")
         train_dataloader = training_data.dataloader(batch_size=self.component_config["batch_size"],
                                                     collate_fn=partial(default_collate_fn, self.vocab),
                                                     shuffle=True,
@@ -101,13 +114,26 @@ class RNNGenerate(GenerateComponent):
                                                    collate_fn=partial(default_collate_fn, self.vocab),
                                                    shuffle=False,
                                                    mode="eval")
-
+        logger.info("train: Config Optimizer Initialization")
         self.optimizer, scheduler = self.config_optimizer()
         self.criterion = self.config_criterion()
+
+        if self.fp16:
+            try:
+                from apex import amp
+            except ImportError:
+                raise ImportError("Please install apex from https://www.github.com/nvidia/apex to use fp16 training.")
+            self.model, optimizer = amp.initialize(self.model, self.optimizer, opt_level=self.fp16_opt_level)
+
+        # Multi-gpu training (should be after apex fp16 initialization)
+        # if self.n_gpu > 1:
+        #     self.model = torch.nn.DataParallel(self.model)
+
         self.compute_metric = None
         self.model.zero_grad()
 
         for epoch in range(self.component_config["epochs"]):
+            logger.info("train: Current Epoch {}".format(epoch))
             scheduler.step()  # Update learning rate schedule
             self.logs = {"loss": 0.0, "eval_loss": 0.0}
             self.epoch_data = tqdm(train_dataloader, desc='Training (epoch #{})'.format(epoch))
@@ -115,13 +141,18 @@ class RNNGenerate(GenerateComponent):
             self.train_epoch()
             self.logs["learning_rate"] = scheduler.get_lr()[0]
             if training_data.eval_data is not None:
+                logger.info("Evaluating Strat")
                 self.evaluate(eval_dataloader=eval_dataloader)
+                logger.info("Evaluating End")
             for key, value in self.logs.items():
                 self.tb_writer.add_scalar(key, value, epoch)
 
     def train_epoch(self, *args, **kwargs):
+        logger.info("train: Training Epoch Start")
         for step, batch_data in enumerate(self.epoch_data):
             self.train_step(batch_data, step)
+        logger.info("train: Training Epoch End")
+
 
     def train_step(self, batch_data, step):
         input_ids, target, lengths = batch_data
@@ -137,8 +168,6 @@ class RNNGenerate(GenerateComponent):
 
         if self.n_gpu > 1:
             loss = loss.mean()  # mean() to average on multi-gpu parallel training
-        if self.component_config["gradient_accumulation_steps"] > 1:
-            loss = loss / self.component_config["gradient_accumulation_steps"]
 
         if self.fp16:
             with amp.scale_loss(loss, self.optimizer) as scaled_loss:
@@ -151,11 +180,10 @@ class RNNGenerate(GenerateComponent):
         self.epoch_data.set_postfix({"loss": self.logs["loss"], **{"step": step + 1}})
         self.global_step = 1
 
-        if (step + 1) % self.component_config["gradient_accumulation_steps"] == 0:
-            if self.fp16:
-                torch.nn.utils.clip_grad_norm(amp.master_params(self.optimizer), self.component_config["max_grad_norm"])
-            else:
-                torch.nn.utils.clip_grad_norm(self.model.parameters(), self.component_config["max_grad_norm"])
+        if self.fp16:
+            torch.nn.utils.clip_grad_norm(amp.master_params(self.optimizer), self.component_config["max_grad_norm"])
+        else:
+            torch.nn.utils.clip_grad_norm(self.model.parameters(), self.component_config["max_grad_norm"])
         return logits
 
     def evaluate(self, eval_dataloader):
@@ -198,6 +226,7 @@ class RNNGenerate(GenerateComponent):
         return logits
 
     def get_predict_dataloader(self, *args, **kwargs):
+        logger.info("predict: Predict DataLoader Initialization")
         dataset = [torch.tensor([self.vocab.bos_token_ids],
                                 dtype=torch.long) for _ in range(self.component_config["batch_size"])]
         dataset = torch.tensor(dataset, dtype=torch.long)
@@ -253,9 +282,11 @@ class RNNGenerate(GenerateComponent):
     def process(self,
                 *args,
                 **kwargs) -> Dict:
+        logger.info("process: Process Sample Start ...")
         n_sample = self.component_config["n_sample"]
         batch_size = self.component_config["batch_size"]
         max_length = self.component_config["max_length"]
+        logger.info("process: n_sample: {}, batch_size: {}, max_length: {}".format(n_sample, batch_size, max_length))
         self.model.to(self.device)
 
         samples = []
@@ -266,6 +297,7 @@ class RNNGenerate(GenerateComponent):
                 samples.extend(current_sample)
                 n_sample -= len(current_sample)
                 T.update(len(current_sample))
+        logger.info("process: Process Sample End ...")
         return {"SMILES": samples}
 
     @classmethod

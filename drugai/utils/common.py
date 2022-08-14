@@ -18,6 +18,7 @@ import argparse
 
 import numpy as np
 import torch
+from rdkit.Chem.rdchem import Mol
 
 from drugai.utils.constants import ENV_LOG_LEVEL, DEFAULT_LOG_LEVEL
 
@@ -142,3 +143,24 @@ def arguments_of(func: Callable) -> List[Text]:
     import inspect
 
     return list(inspect.signature(func).parameters.keys())
+
+def type_check_num_atoms(mol: Mol, 
+                         num_max_atoms:int=-1):
+    """Check number of atoms in `mol` does not exceed `num_max_atoms`
+
+    If number of atoms in `mol` exceeds the number `num_max_atoms`, it will
+    raise `KeyError` exception.
+
+    Args:
+        mol (Mol):
+        num_max_atoms (int): If negative value is set, not check number of
+            atoms.
+
+    """
+    num_atoms = mol.GetNumAtoms()
+    if num_max_atoms >= 0 and num_atoms > num_max_atoms:
+        # Skip extracting feature. ignore this case.
+        
+        raise KeyError(
+            'Number of atoms in mol {} exceeds num_max_atoms {}'
+            .format(num_atoms, num_max_atoms))

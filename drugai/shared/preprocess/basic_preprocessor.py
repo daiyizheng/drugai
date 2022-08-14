@@ -8,47 +8,43 @@
 from __future__ import annotations, print_function
 import logging
 import os
-from typing import Text, Any, List
+from typing import Text, Any, List, Union
 
+import pandas as pd
+import numpy as np
 from tqdm import tqdm
 
+from ..message import Message
 from drugai.shared.preprocess.preprocessor import Preprocessor
-from drugai.utils.io import read_smiles_csv
+from drugai.models.generate.gen_vocab import Vocab
 
 logger = logging.getLogger(__name__)
 
 
 class BasicPreprocessor(Preprocessor):
-    def __init__(self, 
-                 transform=None,
-                 **kwargs):
-        self.transform = transform
+    def __init__(self,  **kwargs):
         super(BasicPreprocessor, self).__init__(**kwargs)
-
-    def _load_data(self, 
-                   path:Text, 
-                   usecols: List = ["SMILES"],
-                   ):
-        return read_smiles_csv(path=path, usecols=usecols)
     
     def pre_process(self, 
                     dataset:List
-                    )->List:   
+                    )->List:
+        logger.info("Pre-processing data start")
+
+        logger.info("Pre-processing data end")
         return dataset
 
-    def get_data_from_paths(self,
-                            path: Text,
-                            usecols: List = ["SMILES"],
-                            **kwargs
-                            ) -> List:
-        if path is None:
-            dataset = []
+  
+    def build_vocab(self, 
+                    vocab: Vocab, 
+                    data: Union[List[Message], List[Text], List[np.ndarray]])->"Vocab":
+        logger.info("Building vocab start")
+        if not isinstance(data, list):
+            raise KeyError("The data only support list")
+        if isinstance(data[0], Message):
+            data = [d.smiles for d in tqdm(data)]
+        elif isinstance(data[0], Text) or isinstance(data[[0], np.ndarray]):
+            data = data
         else:
-            dataset = self._load_data(path=path, usecols=usecols)
-        # 前处理
-        dataset = self.pre_process(dataset)
-        
-        if self.transform is not None:
-            dataset = [self.transform (d)for d in dataset]
-
-        return dataset
+            raise KeyError("The data only support list[Message] or list[Text] or list[np.ndarray]")
+        logger.info("Building vocab end")
+        return vocab.from_data(data)

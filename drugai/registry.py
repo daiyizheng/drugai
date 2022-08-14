@@ -13,6 +13,7 @@ from typing import Dict, Text, Any, Optional, Type
 ## 生成模型
 from drugai.models.generate.rnn_generate.trainer import RNNGenerate
 from drugai.models.generate.vae_generate.trainer import VAEGenerate
+from drugai.models.generate.moflow_generate.trainer import MoFlowGenerate
 
 ## 评估器
 from drugai.metrics.unique_metric import UniqueMetic
@@ -35,6 +36,7 @@ logger = logging.getLogger(__name__)
 component_classes = [
     RNNGenerate,
     VAEGenerate,
+    MoFlowGenerate,
 
     ValidMetic,
     UniqueMetic,

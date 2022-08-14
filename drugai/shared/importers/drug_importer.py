@@ -39,12 +39,12 @@ class DrugImporter(TrainingDataImporter):
                  preprocessor:Preprocessor,
                  **kwargs
                  ) -> "TrainingData":
-        train_data = preprocessor.get_data_from_paths(path=self.train_data_paths)
-        eval_data = preprocessor.get_data_from_paths(path=self.eval_data_paths)
-        test_data = preprocessor.get_data_from_paths(path=self.test_data_paths)
+        train_data = preprocessor.get_data_from_paths(path=self.train_data_paths, **kwargs)
+        eval_data = preprocessor.get_data_from_paths(path=self.eval_data_paths, **kwargs)
+        test_data = preprocessor.get_data_from_paths(path=self.test_data_paths, **kwargs)
         return TrainingData(train_data=train_data,
                             eval_data=eval_data,
                             test_data=test_data,
-                            **kwargs)
+                            preprocessor=preprocessor)
 
     
