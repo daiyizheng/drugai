@@ -16,21 +16,27 @@ import torch
 import numpy as np
 from rdkit import Chem
 
+from drugai.shared.preprocess.moflow_preprocessor import ATOM_VALENCY
+
 logger = logging.getLogger(__name__)
 
-atom_decoder_m = {0: 6, 1: 7, 2: 8, 3: 9}
 bond_decoder_m = {1: Chem.rdchem.BondType.SINGLE, 2: Chem.rdchem.BondType.DOUBLE, 3: Chem.rdchem.BondType.TRIPLE}
-ATOM_VALENCY = {6:4, 7:3, 8:2, 9:1, 15:3, 16:2, 17:1, 35:1, 53:1}
+
 
 def one_hot(data,
-            atomic_num_list:List, 
+            num_max_id:List, 
             out_size:int=9):
-    num_max_id = len(atomic_num_list)
+    """
+    One-hot encoding for categorical features
+    :param data:
+    :param num_max_id:
+    :param out_size:
+    :return:
+    """
     assert data.shape[0] == out_size
     b = np.zeros((out_size, num_max_id), dtype=np.float32)
     for i in range(out_size):
-        ind = atomic_num_list.index(data[i])
-        b[i, ind] = 1.
+        b[i, data[i]] = 1.
     return b
 
 def to_numpy_array(a:Any):
